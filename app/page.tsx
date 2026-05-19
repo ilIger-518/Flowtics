@@ -49,8 +49,19 @@ export default function Page() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-8">
-      <div className="w-full max-w-lg">
+    <div className="min-h-screen flex">
+      <aside className="w-56 border-r border-gray-200 p-6">
+        <nav className="flex flex-col gap-3">
+          <Link className="font-medium text-gray-900" href="/">
+            Drop files
+          </Link>
+          <Link className="text-blue-600" href="/uploads">
+            Uploads
+          </Link>
+        </nav>
+      </aside>
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-lg">
         <div
           {...getRootProps()}
           className="border-2 border-dashed p-8 rounded text-center cursor-pointer"
@@ -87,10 +98,6 @@ export default function Page() {
           </button>
         </div>
 
-        <div className="mt-4">
-          <Link className="text-blue-600 underline" href="/uploads">
-            View all uploads
-          </Link>
         </div>
       </div>
     </div>

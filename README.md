@@ -41,6 +41,7 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 3) Clicking Upload posts a `multipart/form-data` request to `/api/upload` with `files` entries.
 4) The API route writes files to `uploads/` and returns JSON with stored file metadata.
 5) The uploads page lists current files and links to `/uploads/[file]` for download.
+6) A left sidebar provides navigation between "Drop files" and "Uploads".
 
 ## API Endpoints
 ### `POST /api/upload`
