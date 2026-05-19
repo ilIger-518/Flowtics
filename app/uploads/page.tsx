@@ -1,0 +1,46 @@
+import { promises as fs } from "fs";
+import path from "path";
+
+const uploadsDir = path.join(process.cwd(), "uploads");
+
+async function listUploads() {
+  try {
+    const entries = await fs.readdir(uploadsDir);
+    return entries.filter((name) => name !== ".gitkeep").sort();
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      return [];
+    }
+    throw err;
+  }
+}
+
+export default async function UploadsPage() {
+  const files = await listUploads();
+
+  return (
+    <div className="min-h-screen p-8">
+      <div className="mx-auto w-full max-w-3xl">
+        <h1 className="text-2xl font-semibold">Uploads</h1>
+        <p className="mt-2 text-sm text-gray-600">
+          Files are saved to the local uploads folder.
+        </p>
+
+        {files.length === 0 ? (
+          <p className="mt-6 text-gray-600">No uploads yet.</p>
+        ) : (
+          <ul className="mt-6 space-y-2">
+            {files.map((name) => (
+              <li key={name} className="flex items-center justify-between gap-4">
+                <span className="truncate">{name}</span>
+                <a className="text-blue-600 underline" href={`/uploads/${name}`}>
+                  Download
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}

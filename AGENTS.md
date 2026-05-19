@@ -1,33 +1,64 @@
 <!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. The relevant guide can only be found in `README.md` before writing any code. Heed deprecation notices.
+# Critical Instructions
+
+## This is NOT standard Next.js
+
+This project may use experimental patterns, custom architecture, nonstandard routing, modified conventions, or breaking changes that differ from your training data.
+
+Before generating or modifying code:
+1. Read `README.md`
+2. Follow the documented architecture and conventions
+3. Do not assume standard Next.js behavior
+4. Respect deprecation notices and migration notes
+5. Prefer existing project patterns over generic framework conventions
+
+If implementation details in the codebase conflict with your prior knowledge, the codebase is authoritative.
+
+---
 
 # Documentation Requirements
 
-After every meaningful code change, update `README.md` with detailed and accurate documentation.
+`README.md` is a required source of truth for this repository.
 
-The README must always include:
-- Project architecture overview
-- Folder and file responsibilities
-- Data flow and execution flow
-- API endpoints and request/response examples
-- Environment variables and configuration
-- Setup and development instructions
-- Important implementation details
-- Dependency usage and rationale
-- State management patterns
-- Database schema/migrations
+After EVERY meaningful code change, feature addition, refactor, architectural modification, dependency change, or API update:
+- immediately update `README.md`
+- keep examples accurate
+- keep architecture documentation synchronized with implementation
+- remove outdated documentation
+- document WHY changes exist, not only WHAT changed
+
+## README must always document
+
+- Project architecture
+- Folder/file responsibilities
+- Rendering strategy and data flow
+- Server/client boundaries
+- API endpoints and examples
+- Environment variables
+- Authentication flow
+- Database schema and migrations
+- State management
+- Caching strategy
+- External services
+- Build/deployment process
+- Important dependencies and rationale
 - Known limitations and edge cases
+- Troubleshooting notes
 
-When adding new features:
-- Document what was added
-- Explain how it works internally
-- Add usage examples
-- Update code snippets if behavior changes
-- Keep documentation synchronized with the actual codebase
+## Feature Documentation Rules
 
-Documentation should be written for future developers unfamiliar with the project.
-Prefer clarity and completeness over brevity.
-Never leave README outdated after refactors or feature additions.
+When adding functionality:
+- explain how it works internally
+- document integration points
+- provide usage examples
+- update related sections
+- include migration steps if behavior changed
+
+Assume future developers have zero context about the project.
+
+Documentation quality is as important as code quality.
+
+Never leave `README.md` outdated.
+
 <!-- END:nextjs-agent-rules -->

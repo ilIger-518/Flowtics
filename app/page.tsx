@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
@@ -58,7 +59,7 @@ export default function Page() {
           {isDragActive ? (
             <p>Drop the images here...</p>
           ) : (
-            <p>Drag 'n' drop images here, or click to select files</p>
+            <p>Drag and drop images here, or click to select files</p>
           )}
         </div>
 
@@ -84,6 +85,12 @@ export default function Page() {
           <button onClick={() => setFiles([])} className="px-4 py-2 border rounded">
             Clear
           </button>
+        </div>
+
+        <div className="mt-4">
+          <Link className="text-blue-600 underline" href="/uploads">
+            View all uploads
+          </Link>
         </div>
       </div>
     </div>
