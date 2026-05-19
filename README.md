@@ -13,13 +13,15 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 ## Architecture Overview
 - Next.js App Router pages live in `app/` with a root layout in `app/layout.tsx` and the home page in `app/page.tsx`.
 - UI uses React 19 client components where needed (e.g., the uploader uses drag-and-drop and browser APIs).
-- Prisma Client is generated to `app/generated/prisma` and used for database access (no server routes are currently wired in this repo).
+- Prisma Client is generated to `app/generated/prisma` and used for database access (no server routes are currently wired in this repo beyond uploads).
+- Uploads are handled by an App Router API route at `app/api/upload/route.ts` using the Node.js runtime.
 - Static assets and uploaded files are intended to be stored under `public/` and `uploads/` respectively.
 
 ## Folder and File Responsibilities
 - `app/`
 	- `layout.tsx`: Root layout, global fonts, HTML/body structure.
 	- `page.tsx`: Home page (client component) with drag-and-drop image selection, previews, and an upload action.
+	- `api/upload/route.ts`: Accepts `multipart/form-data` uploads and writes files to `uploads/`.
 	- `globals.css`: Global styles.
 	- `generated/prisma/`: Prisma Client output.
 - `prisma/`
@@ -34,16 +36,34 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 1) The home page renders a drag-and-drop zone using `react-dropzone`.
 2) Dropped/selected files are stored in component state and previewed via `URL.createObjectURL`.
 3) Clicking Upload posts a `multipart/form-data` request to `/api/upload` with `files` entries.
-4) The upload API route is not yet implemented, so the request currently 404s unless you add the handler.
+4) The API route writes files to `uploads/` and returns JSON with stored file metadata.
 
 ## API Endpoints
-There are no API routes in the repo right now.
+### `POST /api/upload`
+- Request: `multipart/form-data` with one or more `files` fields.
+- Response: JSON payload with stored file metadata.
 
-Planned endpoint (referenced by the UI):
-- `POST /api/upload`
-	- Request: `multipart/form-data` with one or more `files` fields.
-	- Response: JSON payload indicating success and any stored paths.
-	- Status: Not implemented.
+Example request:
+
+```bash
+curl -F "files=@/path/to/image.jpg" http://localhost:3000/api/upload
+```
+
+Example response:
+
+```json
+{
+	"files": [
+		{
+			"originalName": "image.jpg",
+			"fileName": "2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.jpg",
+			"size": 12345,
+			"type": "image/jpeg",
+			"path": "/uploads/2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.jpg"
+		}
+	]
+}
+```
 
 ## Environment Variables and Configuration
 - `DATABASE_URL`: PostgreSQL connection string for Prisma.
@@ -65,7 +85,8 @@ npm run dev
 ## Important Implementation Details
 - The home page is a client component because it uses browser APIs (drag-and-drop, object URLs).
 - Previews are created with `URL.createObjectURL` and revoked on cleanup to avoid memory leaks.
-- Upload requests currently POST to `/api/upload`, which must be added to persist files.
+- Upload requests POST to `/api/upload`, which writes files to `uploads/` using generated names.
+- The upload route runs on the Node.js runtime to enable filesystem access.
 
 ## Dependency Usage and Rationale
 - `next`: App Router, routing, and server rendering.
@@ -96,6 +117,5 @@ Prisma uses a PostgreSQL datasource. The `Receipt` model is defined in [prisma/s
 Migrations live under `prisma/migrations/`.
 
 ## Known Limitations and Edge Cases
-- `/api/upload` is referenced by the UI but not implemented, so uploads do not persist yet.
 - `uploads/` is not served by Next.js by default; you may need a static serving strategy or custom route.
 - `recharts` and `sharp` are installed but unused.
