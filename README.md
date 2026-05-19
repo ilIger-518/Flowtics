@@ -2,6 +2,14 @@
 
 Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image uploader UI, Prisma-backed data modeling, and Tailwind CSS styling.
 
+## Core Tech
+- Next.js 15 (App Router)
+- React 19
+- Tailwind CSS 4
+- Prisma Client
+- react-dropzone for drag-and-drop uploads
+- recharts for data visualization
+
 ## Architecture Overview
 - Next.js App Router pages live in `app/` with a root layout in `app/layout.tsx` and the home page in `app/page.tsx`.
 - UI uses React 19 client components where needed (e.g., the uploader uses drag-and-drop and browser APIs).
@@ -47,6 +55,12 @@ Install dependencies, then run the dev server:
 npm install
 npm run dev
 ```
+
+## Scripts
+- `dev`: Run the local dev server.
+- `build`: Build for production.
+- `start`: Start the production server.
+- `lint`: Run ESLint.
 
 ## Important Implementation Details
 - The home page is a client component because it uses browser APIs (drag-and-drop, object URLs).
