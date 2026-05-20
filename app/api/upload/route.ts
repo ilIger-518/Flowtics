@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 
 const uploadsDir = path.join(process.cwd(), "uploads");
 const receiptsDir = path.join(uploadsDir, "receipts");
+const structuredDir = path.join(receiptsDir, "structured");
 
 function formatTimestamp(date: Date): string {
   const yyyy = date.getFullYear();
@@ -62,6 +63,68 @@ async function readReceiptText(buffer: Buffer): Promise<string> {
   return data.responses?.[0]?.fullTextAnnotation?.text?.trim() ?? "";
 }
 
+type StructuredReceipt = {
+  merchant?: string;
+  date?: string;
+  currency?: string;
+  total?: number;
+  items?: Array<{ name?: string; price?: number; quantity?: number }>;
+};
+
+const receiptSchema = {
+  type: "object",
+  properties: {
+    merchant: { type: "string" },
+    date: { type: "string" },
+    currency: { type: "string" },
+    total: { type: "number" },
+    items: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          price: { type: "number" },
+          quantity: { type: "number" },
+        },
+      },
+    },
+  },
+};
+
+async function parseReceiptWithOllama(ocrText: string): Promise<StructuredReceipt> {
+  const baseUrl = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
+  const model = process.env.OLLAMA_MODEL ?? "qwen2.5:1.5b";
+
+  const response = await fetch(`${baseUrl}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: "Extract receipt data. Return valid JSON only." },
+        { role: "user", content: ocrText },
+      ],
+      format: receiptSchema,
+      stream: false,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Ollama error: ${response.status} ${errorText}`);
+  }
+
+  const data = (await response.json()) as { message?: { content?: string } };
+  const content = data.message?.content ?? "{}";
+
+  try {
+    return JSON.parse(content) as StructuredReceipt;
+  } catch {
+    return { merchant: undefined, items: [], total: undefined, currency: undefined, date: undefined };
+  }
+}
+
 export async function POST(request: Request) {
   const formData = await request.formData();
   const entries = formData.getAll("files");
@@ -73,6 +136,7 @@ export async function POST(request: Request) {
 
   await fs.mkdir(uploadsDir, { recursive: true });
   await fs.mkdir(receiptsDir, { recursive: true });
+  await fs.mkdir(structuredDir, { recursive: true });
 
   const saved = [] as Array<{
     originalName: string;
@@ -81,6 +145,7 @@ export async function POST(request: Request) {
     type: string;
     path: string;
     receiptPath: string;
+    structuredPath: string;
   }>;
 
   for (const file of files) {
@@ -109,6 +174,11 @@ export async function POST(request: Request) {
         2
       )
     );
+
+    const structured = await parseReceiptWithOllama(receiptText);
+    const structuredFileName = `${formatTimestamp(now)}_${uuid}.json`;
+    const structuredFilePath = path.join(structuredDir, structuredFileName);
+    await fs.writeFile(structuredFilePath, JSON.stringify(structured, null, 2));
     saved.push({
       originalName: file.name,
       fileName,
@@ -116,6 +186,7 @@ export async function POST(request: Request) {
       type: file.type,
       path: `/uploads/${fileName}`,
       receiptPath: `/uploads/receipts/${receiptFileName}`,
+      structuredPath: `/uploads/receipts/structured/${structuredFileName}`,
     });
   }
 
