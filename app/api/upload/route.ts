@@ -8,10 +8,22 @@ export const runtime = "nodejs";
 const uploadsDir = path.join(process.cwd(), "uploads");
 const receiptsDir = path.join(uploadsDir, "receipts");
 
-function makeSafeFileName(originalName: string): string {
-  const ext = path.extname(originalName).toLowerCase();
-  const safeExt = ext.replace(/[^a-z0-9.]/gi, "");
-  return `${crypto.randomUUID()}${safeExt}`;
+function formatTimestamp(date: Date): string {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  const ms = String(date.getMilliseconds()).padStart(3, "0");
+  return `${yyyy}-${mm}-${dd}:${hh}-${min}-${ss}-${ms}`;
+}
+
+function makeSafeFileName(date: Date, uuid: string, originalName: string): string {
+  const rawExt = path.extname(originalName || "").toLowerCase();
+  const safeExt = rawExt.replace(/[^a-z0-9.]/gi, "");
+  const ext = safeExt ? (safeExt.startsWith(".") ? safeExt : `.${safeExt}`) : ".bin";
+  return `${formatTimestamp(date)}_${uuid}${ext}`;
 }
 
 async function readReceiptText(buffer: Buffer): Promise<string> {
@@ -72,13 +84,15 @@ export async function POST(request: Request) {
   }>;
 
   for (const file of files) {
-    const fileName = makeSafeFileName(file.name || "upload");
+    const now = new Date();
+    const uuid = crypto.randomUUID();
+    const fileName = makeSafeFileName(now, uuid, file.name || "upload");
     const filePath = path.join(uploadsDir, fileName);
     const buffer = Buffer.from(await file.arrayBuffer());
     await fs.writeFile(filePath, buffer);
 
     const receiptText = await readReceiptText(buffer);
-    const receiptFileName = `${fileName}.json`;
+    const receiptFileName = `${formatTimestamp(now)}_${uuid}.json`;
     const receiptFilePath = path.join(receiptsDir, receiptFileName);
     await fs.writeFile(
       receiptFilePath,

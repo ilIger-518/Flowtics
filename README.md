@@ -40,7 +40,7 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 1) The home page renders a drag-and-drop zone using `react-dropzone`.
 2) Dropped/selected files are stored in component state and previewed via `URL.createObjectURL`.
 3) Clicking Upload posts a `multipart/form-data` request to `/api/upload` with `files` entries.
-4) The API route writes files to `uploads/`, sends the image to Google Cloud Vision, and stores OCR text in `uploads/receipts/<image>.json`.
+4) The API route writes files to `uploads/` using `yyyy-mm-dd:hh-mm-ss-ms_UUID.<ext>`, sends the image to Google Cloud Vision, and stores OCR text in `uploads/receipts/<timestamp>_<uuid>.json`.
 5) The uploads page lists current files and links to `/uploads/[file]` for download.
 6) A left sidebar provides navigation between "Drop files" and "Uploads".
 
@@ -62,11 +62,11 @@ Example response:
 	"files": [
 		{
 			"originalName": "image.jpg",
-			"fileName": "2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.jpg",
+			"fileName": "2026-05-20:10-22-31-004_2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.jpg",
 			"size": 12345,
 			"type": "image/jpeg",
-			"path": "/uploads/2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.jpg"
-			"receiptPath": "/uploads/receipts/2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.jpg.json"
+			"path": "/uploads/2026-05-20:10-22-31-004_2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.jpg",
+			"receiptPath": "/uploads/receipts/2026-05-20:10-22-31-004_2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.json"
 		}
 	]
 }
@@ -78,7 +78,7 @@ Example response:
 Example request:
 
 ```bash
-curl -O http://localhost:3000/uploads/2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.jpg
+curl -O http://localhost:3000/uploads/2026-05-20:10-22-31-004_2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.jpg
 ```
 
 ## Environment Variables and Configuration
@@ -102,7 +102,7 @@ npm run dev
 ## Important Implementation Details
 - The home page is a client component because it uses browser APIs (drag-and-drop, object URLs).
 - Previews are created with `URL.createObjectURL` and revoked on cleanup to avoid memory leaks.
-- Upload requests POST to `/api/upload`, which writes files to `uploads/` using generated names.
+- Upload requests POST to `/api/upload`, which writes files to `uploads/` using `yyyy-mm-dd:hh-mm-ss-ms_UUID.<ext>` naming.
 - The upload route runs on the Node.js runtime to enable filesystem access.
 - The download route sanitizes the requested filename to avoid path traversal.
 - OCR requests are sent to Google Cloud Vision `images:annotate` using the API key.
