@@ -16,6 +16,7 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 - Prisma Client is generated to `app/generated/prisma` and used for database access (no server routes are currently wired in this repo beyond uploads).
 - Uploads are handled by an App Router API route at `app/api/upload/route.ts` using the Node.js runtime.
 - Uploaded files are listed at `/uploads` and can be downloaded via `/uploads/[file]`.
+- Receipt OCR runs via Google Cloud Vision and stores per-upload JSON in `uploads/receipts/`.
 - Static assets and uploaded files are intended to be stored under `public/` and `uploads/` respectively.
 
 ## Folder and File Responsibilities
@@ -39,14 +40,14 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 1) The home page renders a drag-and-drop zone using `react-dropzone`.
 2) Dropped/selected files are stored in component state and previewed via `URL.createObjectURL`.
 3) Clicking Upload posts a `multipart/form-data` request to `/api/upload` with `files` entries.
-4) The API route writes files to `uploads/` and returns JSON with stored file metadata.
+4) The API route writes files to `uploads/`, sends the image to Google Cloud Vision, and stores OCR text in `uploads/receipts/<image>.json`.
 5) The uploads page lists current files and links to `/uploads/[file]` for download.
 6) A left sidebar provides navigation between "Drop files" and "Uploads".
 
 ## API Endpoints
 ### `POST /api/upload`
 - Request: `multipart/form-data` with one or more `files` fields.
-- Response: JSON payload with stored file metadata.
+- Response: JSON payload with stored file metadata and a `receiptPath` pointing to the JSON file.
 
 Example request:
 
@@ -65,6 +66,7 @@ Example response:
 			"size": 12345,
 			"type": "image/jpeg",
 			"path": "/uploads/2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.jpg"
+			"receiptPath": "/uploads/receipts/2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.jpg.json"
 		}
 	]
 }
@@ -81,6 +83,7 @@ curl -O http://localhost:3000/uploads/2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.jpg
 
 ## Environment Variables and Configuration
 - `DATABASE_URL`: PostgreSQL connection string for Prisma.
+- `GOOGLE_CLOUD_VISION_API_KEY`: API key with Google Cloud Vision API enabled.
 
 ## Setup and Development
 Install dependencies, then run the dev server:
@@ -102,6 +105,7 @@ npm run dev
 - Upload requests POST to `/api/upload`, which writes files to `uploads/` using generated names.
 - The upload route runs on the Node.js runtime to enable filesystem access.
 - The download route sanitizes the requested filename to avoid path traversal.
+- OCR requests are sent to Google Cloud Vision `images:annotate` using the API key.
 
 ## Dependency Usage and Rationale
 - `next`: App Router, routing, and server rendering.
@@ -135,3 +139,4 @@ Migrations live under `prisma/migrations/`.
 - Uploaded files are served only via the `/uploads/[file]` download route.
 - There is no authentication or file type enforcement on uploads yet.
 - `recharts` and `sharp` are installed but unused.
+- OCR can fail if the API key is missing or Vision API is not enabled.
