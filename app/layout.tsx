@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Gabarito, Geist_Mono } from "next/font/google";
+import { SideNav } from "@/components/nav";
 // @ts-expect-error: CSS module declarations may be missing in this environment
 import "./globals.css";
 
@@ -24,11 +25,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${gabarito.variable} ${geistMono.variable} h-full`}
-    >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+    <html lang="en" className={`${gabarito.variable} ${geistMono.variable} h-full`}>
+      <body className="min-h-full flex flex-col font-sans">
+        <div className="flex min-h-[100dvh]">
+          <SideNav />
+          <div className="flex-grow overflow-auto">{children}</div>
+        </div>
+      </body>
     </html>
   );
 }

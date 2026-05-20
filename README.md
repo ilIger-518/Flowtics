@@ -32,6 +32,9 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 	- `dot-matrix.css`: Dot-matrix background utility from the template.
 	- `globals.css`: Global styles.
 	- `generated/prisma/`: Prisma Client output.
+- `components/nav/side-nav.tsx`: Collapsible SideNav UI.
+- `config/site.ts`: Navigation config for the SideNav.
+- `lib/utils.ts`: Utility helpers (class name merging).
 - `prisma/`
 	- `schema.prisma`: Database schema and generator config.
 	- `migrations/`: Prisma migration history.
@@ -48,7 +51,7 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 5) The OCR text is sent to a local Ollama model (`qwen2.5:1.5b`) to produce structured JSON saved under `uploads/receipts/structured/`.
 6) The uploads page lists current files and links to `/uploads/[file]` for download.
 7) The receipts page lists OCR and structured JSON outputs for each upload.
-8) A left sidebar provides navigation between "Drop files", "Uploads", and "Receipts".
+8) A left SideNav provides navigation between "Drop files", "Uploads", and "Receipts".
 
 ## API Endpoints
 ### `POST /api/upload`
