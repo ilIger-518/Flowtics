@@ -26,6 +26,7 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 	- `page.tsx`: Home page (client component) with drag-and-drop image selection, previews, and an upload action.
 	- `api/upload/route.ts`: Accepts `multipart/form-data` uploads and writes files to `uploads/`.
 	- `uploads/page.tsx`: Lists uploaded files with download links.
+	- `uploads/receipts/page.tsx`: Lists OCR and structured receipt JSON files.
 	- `uploads/[file]/route.ts`: Streams a file from `uploads/` as a download.
 	- `globals.css`: Global styles.
 	- `generated/prisma/`: Prisma Client output.
@@ -44,7 +45,8 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 4) The API route writes files to `uploads/` using `yyyy-mm-dd:hh-mm-ss-ms_UUID.<ext>`, sends the image to Google Cloud Vision, and stores OCR text in `uploads/receipts/<timestamp>_<uuid>.json`.
 5) The OCR text is sent to a local Ollama model (`qwen2.5:1.5b`) to produce structured JSON saved under `uploads/receipts/structured/`.
 6) The uploads page lists current files and links to `/uploads/[file]` for download.
-7) A left sidebar provides navigation between "Drop files" and "Uploads".
+7) The receipts page lists OCR and structured JSON outputs for each upload.
+8) A left sidebar provides navigation between "Drop files", "Uploads", and "Receipts".
 
 ## API Endpoints
 ### `POST /api/upload`
@@ -143,6 +145,7 @@ Migrations live under `prisma/migrations/`.
 
 ## Known Limitations and Edge Cases
 - Uploaded files are served only via the `/uploads/[file]` download route.
+- The download route rejects directory paths with a 400 response.
 - There is no authentication or file type enforcement on uploads yet.
 - `recharts` and `sharp` are installed but unused.
 - OCR can fail if the API key is missing or Vision API is not enabled.

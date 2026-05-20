@@ -24,6 +24,11 @@ export async function GET(
   const filePath = path.join(uploadsDir, safeName);
 
   try {
+    const stat = await fs.stat(filePath);
+    if (!stat.isFile()) {
+      return NextResponse.json({ error: "Not a file." }, { status: 400 });
+    }
+
     const data = await fs.readFile(filePath);
     return new NextResponse(data, {
       headers: {
@@ -34,6 +39,9 @@ export async function GET(
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") {
       return NextResponse.json({ error: "Not found." }, { status: 404 });
+    }
+    if ((err as NodeJS.ErrnoException).code === "EISDIR") {
+      return NextResponse.json({ error: "Not a file." }, { status: 400 });
     }
     throw err;
   }

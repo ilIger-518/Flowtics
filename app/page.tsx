@@ -58,6 +58,9 @@ export default function Page() {
           <Link className="text-blue-600" href="/uploads">
             Uploads
           </Link>
+          <Link className="text-blue-600" href="/uploads/receipts">
+            Receipts
+          </Link>
         </nav>
       </aside>
       <div className="flex-1 flex items-center justify-center p-8">

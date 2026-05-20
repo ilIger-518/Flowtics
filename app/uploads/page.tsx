@@ -29,6 +29,9 @@ export default async function UploadsPage() {
           <Link className="font-medium text-gray-900" href="/uploads">
             Uploads
           </Link>
+          <Link className="text-blue-600" href="/uploads/receipts">
+            Receipts
+          </Link>
         </nav>
       </aside>
       <div className="flex-1 p-8">
