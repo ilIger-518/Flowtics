@@ -32,22 +32,6 @@ function ToggleIcon({ open }: { open: boolean }) {
   );
 }
 
-function UserCard() {
-  return (
-    <div className="flex h-16 items-center border-b border-border px-3">
-      <div className="flex w-full items-center justify-between rounded-md px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-800">
-        <div className="flex items-center">
-          <div className="mr-2 h-9 w-9 rounded-full bg-slate-300 dark:bg-slate-700" />
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">Flowtics</span>
-            <span className="text-xs text-muted-foreground">Receipt Lab</span>
-          </div>
-        </div>
-        <span className="text-xs text-muted-foreground">▼</span>
-      </div>
-    </div>
-  );
-}
 
 function Navigation() {
   const pathname = usePathname();
@@ -108,7 +92,6 @@ export default function SideNav() {
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <UserCard />
         <Navigation />
         <BrandBadge />
       </aside>
