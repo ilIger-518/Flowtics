@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Gabarito, Geist_Mono } from "next/font/google";
 // @ts-expect-error: CSS module declarations may be missing in this environment
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const gabarito = Gabarito({
+  variable: "--font-gabarito",
   subsets: ["latin"],
 });
 
@@ -26,9 +26,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${gabarito.variable} ${geistMono.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>
   );
 }
