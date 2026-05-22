@@ -1,91 +1,80 @@
-"use client";
+import { promises as fs } from "fs";
+import path from "path";
+import Link from "next/link";
 
-import { useCallback, useEffect, useState } from "react";
-import { useDropzone } from "react-dropzone";
+const uploadsDir = path.join(process.cwd(), "uploads");
+const receiptsDir = path.join(uploadsDir, "receipts");
+const structuredDir = path.join(receiptsDir, "structured");
 
-type FileWithPreview = File & { preview?: string };
-
-export default function Page() {
-  const [files, setFiles] = useState<FileWithPreview[]>([]);
-  const [uploading, setUploading] = useState(false);
-
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const mapped = acceptedFiles.map((file) => {
-      const f = file as FileWithPreview;
-      f.preview = URL.createObjectURL(file);
-      return f;
-    });
-    setFiles((prev) => [...prev, ...mapped]);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      files.forEach((f) => f.preview && URL.revokeObjectURL(f.preview));
-    };
-  }, [files]);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { "image/*": [] },
-  });
-
-  const handleUpload = async () => {
-    if (files.length === 0) return;
-    setUploading(true);
-    const form = new FormData();
-    files.forEach((f) => form.append("files", f));
-    try {
-      await fetch("/api/upload", { method: "POST", body: form });
-      // simple success feedback
-      setFiles([]);
-      alert("Upload complete");
-    } catch (err) {
-      console.error(err);
-      alert("Upload failed");
-    } finally {
-      setUploading(false);
+async function countFiles(dir: string) {
+  try {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    return entries.filter((entry) => entry.isFile()).length;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      return 0;
     }
-  };
+    throw err;
+  }
+}
+
+export default async function Page() {
+  const [uploadCount, ocrCount, structuredCount] = await Promise.all([
+    countFiles(uploadsDir),
+    countFiles(receiptsDir),
+    countFiles(structuredDir),
+  ]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-8">
-      <div className="w-full max-w-lg">
-        <div
-          {...getRootProps()}
-          className="border-2 border-dashed p-8 rounded text-center cursor-pointer"
-        >
-          <input {...getInputProps()} />
-          {isDragActive ? (
-            <p>Drop the images here...</p>
-          ) : (
-            <p>Drag and drop images here, or click to select files</p>
-          )}
+    <div className="min-h-screen p-8">
+      <div className="mx-auto w-full max-w-5xl">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold">Dashboard</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Receipt pipeline overview and quick actions.
+            </p>
+          </div>
+          <Link className="rounded border px-3 py-1 text-sm" href="/drop">
+            Drop files
+          </Link>
         </div>
 
-        <div className="mt-4 grid grid-cols-4 gap-2">
-          {files.map((file, idx) => (
-            <div key={idx} className="h-24 w-24 overflow-hidden rounded bg-gray-100">
-              {file.preview ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={file.preview} alt={file.name} className="h-full w-full object-cover" />
-              ) : null}
-            </div>
-          ))}
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="text-sm text-muted-foreground">Uploads</p>
+            <p className="mt-2 text-2xl font-semibold">{uploadCount}</p>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="text-sm text-muted-foreground">OCR Files</p>
+            <p className="mt-2 text-2xl font-semibold">{ocrCount}</p>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="text-sm text-muted-foreground">Structured</p>
+            <p className="mt-2 text-2xl font-semibold">{structuredCount}</p>
+          </div>
         </div>
 
-        <div className="mt-4 flex gap-2">
-          <button
-            onClick={handleUpload}
-            disabled={uploading || files.length === 0}
-            className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          <Link
+            href="/uploads"
+            className="rounded-lg border border-border bg-card p-4 transition hover:border-primary"
           >
-            {uploading ? "Uploading..." : "Upload"}
-          </button>
-          <button onClick={() => setFiles([])} className="px-4 py-2 border rounded">
-            Clear
-          </button>
+            <h2 className="text-lg font-medium">Browse uploads</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Download original images and files.
+            </p>
+          </Link>
+          <Link
+            href="/uploads/receipts"
+            className="rounded-lg border border-border bg-card p-4 transition hover:border-primary"
+          >
+            <h2 className="text-lg font-medium">Receipt outputs</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              View OCR and structured JSON exports.
+            </p>
+          </Link>
         </div>
-
       </div>
     </div>
   );

@@ -24,7 +24,8 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 ## Folder and File Responsibilities
 - `app/`
 	- `layout.tsx`: Root layout, global fonts, HTML/body structure.
-	- `page.tsx`: Home page (client component) with drag-and-drop image selection, previews, and an upload action.
+	- `page.tsx`: Dashboard home page (server component) with pipeline metrics.
+	- `drop/page.tsx`: Drag-and-drop upload page.
 	- `api/upload/route.ts`: Accepts `multipart/form-data` uploads and writes files to `uploads/`.
 	- `uploads/page.tsx`: Lists uploaded files with download links.
 	- `uploads/receipts/page.tsx`: Lists OCR and structured receipt JSON files.
@@ -44,14 +45,15 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 - `components/`, `lib/`: Reserved for UI components and shared utilities (currently empty).
 
 ## Data Flow and Execution Flow
-1) The home page renders a drag-and-drop zone using `react-dropzone`.
-2) Dropped/selected files are stored in component state and previewed via `URL.createObjectURL`.
-3) Clicking Upload posts a `multipart/form-data` request to `/api/upload` with `files` entries.
-4) The API route writes files to `uploads/` using `yyyy-mm-dd:hh-mm-ss-ms_UUID.<ext>`, sends the image to Google Cloud Vision, and stores OCR text in `uploads/receipts/<timestamp>_<uuid>.json`.
-5) The OCR text is sent to a local Ollama model (`qwen2.5:1.5b`) to produce structured JSON saved under `uploads/receipts/structured/`.
-6) The uploads page lists current files and links to `/uploads/[file]` for download.
-7) The receipts page lists OCR and structured JSON outputs for each upload.
-8) A left SideNav provides navigation between "Drop files", "Uploads", and "Receipts".
+1) The dashboard home page summarizes current uploads and OCR outputs.
+2) The drop page renders a drag-and-drop zone using `react-dropzone`.
+3) Dropped/selected files are stored in component state and previewed via `URL.createObjectURL`.
+4) Clicking Upload posts a `multipart/form-data` request to `/api/upload` with `files` entries.
+5) The API route writes files to `uploads/` using `yyyy-mm-dd:hh-mm-ss-ms_UUID.<ext>`, sends the image to Google Cloud Vision, and stores OCR text in `uploads/receipts/<timestamp>_<uuid>.json`.
+6) The OCR text is sent to a local Ollama model (`qwen2.5:1.5b`) to produce structured JSON saved under `uploads/receipts/structured/`.
+7) The uploads page lists current files and links to `/uploads/[file]` for download.
+8) The receipts page lists OCR and structured JSON outputs for each upload.
+9) A left SideNav provides navigation between "Dashboard", "Drop files", "Uploads", and "Receipts".
 
 ## API Endpoints
 ### `POST /api/upload`
@@ -112,7 +114,8 @@ npm run dev
 - `lint`: Run ESLint.
 
 ## Important Implementation Details
-- The home page is a client component because it uses browser APIs (drag-and-drop, object URLs).
+- The dashboard home page is a server component that reads file counts from disk.
+- The drop page is a client component because it uses browser APIs (drag-and-drop, object URLs).
 - Previews are created with `URL.createObjectURL` and revoked on cleanup to avoid memory leaks.
 - Upload requests POST to `/api/upload`, which writes files to `uploads/` using `yyyy-mm-dd:hh-mm-ss-ms_UUID.<ext>` naming.
 - The upload route runs on the Node.js runtime to enable filesystem access.

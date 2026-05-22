@@ -9,7 +9,8 @@ export const siteConfig = {
 };
 
 export const navigations: Navigation[] = [
-  { name: "Drop files", href: "/" },
+  { name: "Dashboard", href: "/" },
+  { name: "Drop files", href: "/drop" },
   { name: "Uploads", href: "/uploads" },
   { name: "Receipts", href: "/uploads/receipts" },
 ];
