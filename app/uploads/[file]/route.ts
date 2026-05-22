@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import { resolveUploadsDir } from "@/lib/paths";
 
 export const runtime = "nodejs";
 
-const uploadsDir = path.join(process.cwd(), "uploads");
+const uploadsDir = resolveUploadsDir();
 
 function toSafeName(name: string) {
   return path.basename(name);
@@ -15,9 +16,10 @@ export async function GET(
   { params }: { params: Promise<{ file: string }> }
 ) {
   const { file } = await params;
-  const safeName = toSafeName(file);
+  const decoded = decodeURIComponent(file);
+  const safeName = toSafeName(decoded);
 
-  if (!safeName || safeName !== file) {
+  if (!safeName || safeName !== decoded) {
     return NextResponse.json({ error: "Invalid file name." }, { status: 400 });
   }
 

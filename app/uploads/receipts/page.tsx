@@ -1,9 +1,9 @@
 import { promises as fs } from "fs";
-import path from "path";
 import Link from "next/link";
+import { resolveReceiptsDir, resolveStructuredDir } from "@/lib/paths";
 
-const receiptsDir = path.join(process.cwd(), "uploads", "receipts");
-const structuredDir = path.join(receiptsDir, "structured");
+const receiptsDir = resolveReceiptsDir();
+const structuredDir = resolveStructuredDir();
 
 async function listFiles(dir: string) {
   try {
@@ -64,10 +64,15 @@ export default async function ReceiptsPage() {
               <ul className="mt-3 space-y-2">
                 {structuredFiles.map((name) => (
                   <li key={name} className="flex items-center justify-between gap-4">
-                    <span className="truncate">{name}</span>
+                    <Link
+                      className="truncate text-blue-600 underline"
+                      href={`/receipts/${encodeURIComponent(name)}`}
+                    >
+                      {name}
+                    </Link>
                     <Link
                       className="text-blue-600 underline"
-                      href={`/uploads/receipts/structured/${name}`}
+                      href={`/uploads/receipts/structured/${encodeURIComponent(name)}`}
                     >
                       Download
                     </Link>

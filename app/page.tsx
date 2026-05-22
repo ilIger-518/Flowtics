@@ -1,10 +1,14 @@
 import { promises as fs } from "fs";
-import path from "path";
 import Link from "next/link";
+import {
+  resolveUploadsDir,
+  resolveReceiptsDir,
+  resolveStructuredDir,
+} from "@/lib/paths";
 
-const uploadsDir = path.join(process.cwd(), "uploads");
-const receiptsDir = path.join(uploadsDir, "receipts");
-const structuredDir = path.join(receiptsDir, "structured");
+const uploadsDir = resolveUploadsDir();
+const receiptsDir = resolveReceiptsDir();
+const structuredDir = resolveStructuredDir();
 
 async function countFiles(dir: string) {
   try {

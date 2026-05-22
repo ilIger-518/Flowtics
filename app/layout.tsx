@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Gabarito, Geist_Mono } from "next/font/google";
 import { SideNav } from "@/components/nav";
-// @ts-expect-error: CSS module declarations may be missing in this environment
 import "./globals.css";
 
 const gabarito = Gabarito({

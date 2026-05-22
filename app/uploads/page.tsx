@@ -1,8 +1,8 @@
 import { promises as fs } from "fs";
-import path from "path";
 import Link from "next/link";
+import { resolveUploadsDir } from "@/lib/paths";
 
-const uploadsDir = path.join(process.cwd(), "uploads");
+const uploadsDir = resolveUploadsDir();
 
 async function listUploads() {
   try {

@@ -29,6 +29,7 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 	- `api/upload/route.ts`: Accepts `multipart/form-data` uploads and writes files to `uploads/`.
 	- `uploads/page.tsx`: Lists uploaded files with download links.
 	- `uploads/receipts/page.tsx`: Lists OCR and structured receipt JSON files.
+	- `receipts/[file]/page.tsx`: Review and repair structured receipt data.
 	- `uploads/[file]/route.ts`: Streams a file from `uploads/` as a download.
 	- `uploads/receipts/[file]/route.ts`: Streams OCR JSON from `uploads/receipts/`.
 	- `uploads/receipts/structured/[file]/route.ts`: Streams structured JSON from `uploads/receipts/structured/`.
@@ -54,8 +55,9 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 5) The API route writes files to `uploads/` using `yyyy-mm-dd:hh-mm-ss-ms_UUID.<ext>`, sends the image to Google Cloud Vision (document text detection), and stores OCR text in `uploads/receipts/ocr_<timestamp>_<uuid>.json`.
 6) The OCR text is sent to a local Ollama model (`qwen2.5:1.5b`) to produce structured JSON saved under `uploads/receipts/structured/structured_<timestamp>_<uuid>.json` with merchant, address, date, time, currency, total, and item lines.
 7) The uploads page lists current files and links to `/uploads/[file]` for download.
-8) The receipts page lists OCR and structured JSON outputs for each upload.
-9) A left SideNav provides navigation between "Dashboard", "Drop files", "Uploads", and "Receipts".
+8) The receipts page lists OCR and structured JSON outputs for each upload, with links to a repair view.
+9) The receipt repair view shows the original image and lets users edit structured fields.
+10) A left SideNav provides navigation between "Dashboard", "Drop files", "Uploads", and "Receipts".
 
 ## API Endpoints
 ### `POST /api/upload`
@@ -101,6 +103,10 @@ curl -O http://localhost:3000/uploads/2026-05-20:10-22-31-004_2f7d1b3d-2a9f-4b9f
 ### `GET /uploads/receipts/structured/[file]`
 - Response: Structured JSON download (content-type `application/json`).
 
+### `PUT /uploads/receipts/structured/[file]`
+- Request: JSON body with repaired fields.
+- Response: `{ "ok": true }` on success.
+
 ## Environment Variables and Configuration
 - `DATABASE_URL`: PostgreSQL connection string for Prisma.
 - `GOOGLE_CLOUD_VISION_API_KEY`: API key with Google Cloud Vision API enabled.
@@ -131,6 +137,7 @@ npm run dev
 - OCR requests are sent to Google Cloud Vision `images:annotate` using document text detection.
 - OCR text is parsed by Ollama via `/api/chat` with a JSON schema to produce structured receipts.
 - Theme tokens follow the VisActor template and are mapped into Tailwind via `@theme inline`.
+- File paths resolve from the repo root by locating the nearest `package.json`, so routes work even if the dev server is started from a subdirectory.
 
 ## Dependency Usage and Rationale
 - `next`: App Router, routing, and server rendering.
