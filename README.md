@@ -51,8 +51,8 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 2) The drop page renders a drag-and-drop zone using `react-dropzone`.
 3) Dropped/selected files are stored in component state and previewed via `URL.createObjectURL`.
 4) Clicking Upload posts a `multipart/form-data` request to `/api/upload` with `files` entries.
-5) The API route writes files to `uploads/` using `yyyy-mm-dd:hh-mm-ss-ms_UUID.<ext>`, sends the image to Google Cloud Vision, and stores OCR text in `uploads/receipts/<timestamp>_<uuid>.json`.
-6) The OCR text is sent to a local Ollama model (`qwen2.5:1.5b`) to produce structured JSON saved under `uploads/receipts/structured/`.
+5) The API route writes files to `uploads/` using `yyyy-mm-dd:hh-mm-ss-ms_UUID.<ext>`, sends the image to Google Cloud Vision (document text detection), and stores OCR text in `uploads/receipts/ocr_<timestamp>_<uuid>.json`.
+6) The OCR text is sent to a local Ollama model (`qwen2.5:1.5b`) to produce structured JSON saved under `uploads/receipts/structured/structured_<timestamp>_<uuid>.json`.
 7) The uploads page lists current files and links to `/uploads/[file]` for download.
 8) The receipts page lists OCR and structured JSON outputs for each upload.
 9) A left SideNav provides navigation between "Dashboard", "Drop files", "Uploads", and "Receipts".
@@ -79,8 +79,8 @@ Example response:
 			"size": 12345,
 			"type": "image/jpeg",
 			"path": "/uploads/2026-05-20:10-22-31-004_2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.jpg",
-			"receiptPath": "/uploads/receipts/2026-05-20:10-22-31-004_2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.json",
-			"structuredPath": "/uploads/receipts/structured/2026-05-20:10-22-31-004_2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.json"
+			"receiptPath": "/uploads/receipts/ocr_2026-05-20:10-22-31-004_2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.json",
+			"structuredPath": "/uploads/receipts/structured/structured_2026-05-20:10-22-31-004_2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.json"
 		}
 	]
 }
@@ -128,7 +128,7 @@ npm run dev
 - Upload requests POST to `/api/upload`, which writes files to `uploads/` using `yyyy-mm-dd:hh-mm-ss-ms_UUID.<ext>` naming.
 - The upload route runs on the Node.js runtime to enable filesystem access.
 - The download route sanitizes the requested filename to avoid path traversal.
-- OCR requests are sent to Google Cloud Vision `images:annotate` using the API key.
+- OCR requests are sent to Google Cloud Vision `images:annotate` using document text detection.
 - OCR text is parsed by Ollama via `/api/chat` with a JSON schema to produce structured receipts.
 - Theme tokens follow the VisActor template and are mapped into Tailwind via `@theme inline`.
 

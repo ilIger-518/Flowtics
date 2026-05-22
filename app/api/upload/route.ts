@@ -37,7 +37,7 @@ async function readReceiptText(buffer: Buffer): Promise<string> {
     requests: [
       {
         image: { content: buffer.toString("base64") },
-        features: [{ type: "TEXT_DETECTION" }],
+        features: [{ type: "DOCUMENT_TEXT_DETECTION" }],
       },
     ],
   };
@@ -157,7 +157,7 @@ export async function POST(request: Request) {
     await fs.writeFile(filePath, buffer);
 
     const receiptText = await readReceiptText(buffer);
-    const receiptFileName = `${formatTimestamp(now)}_${uuid}.json`;
+    const receiptFileName = `ocr_${formatTimestamp(now)}_${uuid}.json`;
     const receiptFilePath = path.join(receiptsDir, receiptFileName);
     await fs.writeFile(
       receiptFilePath,
@@ -175,8 +175,16 @@ export async function POST(request: Request) {
       )
     );
 
-    const structured = await parseReceiptWithOllama(receiptText);
-    const structuredFileName = `${formatTimestamp(now)}_${uuid}.json`;
+    const structuredFileName = `structured_${formatTimestamp(now)}_${uuid}.json`;
+    const structured = receiptText
+      ? await parseReceiptWithOllama(receiptText)
+      : {
+          merchant: undefined,
+          items: [],
+          total: undefined,
+          currency: undefined,
+          date: undefined,
+        };
     const structuredFilePath = path.join(structuredDir, structuredFileName);
     await fs.writeFile(structuredFilePath, JSON.stringify(structured, null, 2));
     saved.push({
