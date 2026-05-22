@@ -52,7 +52,7 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 3) Dropped/selected files are stored in component state and previewed via `URL.createObjectURL`.
 4) Clicking Upload posts a `multipart/form-data` request to `/api/upload` with `files` entries.
 5) The API route writes files to `uploads/` using `yyyy-mm-dd:hh-mm-ss-ms_UUID.<ext>`, sends the image to Google Cloud Vision (document text detection), and stores OCR text in `uploads/receipts/ocr_<timestamp>_<uuid>.json`.
-6) The OCR text is sent to a local Ollama model (`qwen2.5:1.5b`) to produce structured JSON saved under `uploads/receipts/structured/structured_<timestamp>_<uuid>.json`.
+6) The OCR text is sent to a local Ollama model (`qwen2.5:1.5b`) to produce structured JSON saved under `uploads/receipts/structured/structured_<timestamp>_<uuid>.json` with merchant, address, date, time, currency, total, and item lines.
 7) The uploads page lists current files and links to `/uploads/[file]` for download.
 8) The receipts page lists OCR and structured JSON outputs for each upload.
 9) A left SideNav provides navigation between "Dashboard", "Drop files", "Uploads", and "Receipts".

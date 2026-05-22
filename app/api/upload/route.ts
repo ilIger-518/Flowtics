@@ -65,7 +65,9 @@ async function readReceiptText(buffer: Buffer): Promise<string> {
 
 type StructuredReceipt = {
   merchant?: string;
+  address?: string;
   date?: string;
+  time?: string;
   currency?: string;
   total?: number;
   items?: Array<{ name?: string; price?: number; quantity?: number }>;
@@ -75,7 +77,9 @@ const receiptSchema = {
   type: "object",
   properties: {
     merchant: { type: "string" },
+    address: { type: "string" },
     date: { type: "string" },
+    time: { type: "string" },
     currency: { type: "string" },
     total: { type: "number" },
     items: {
@@ -102,7 +106,11 @@ async function parseReceiptWithOllama(ocrText: string): Promise<StructuredReceip
     body: JSON.stringify({
       model,
       messages: [
-        { role: "system", content: "Extract receipt data. Return valid JSON only." },
+        {
+          role: "system",
+          content:
+            "Extract receipt data as JSON only. Include: merchant name, address, date, time, currency, total, and items (name, price, quantity). Use null when unknown. Only include items that have a price. Do not include headers, addresses, or totals as items.",
+        },
         { role: "user", content: ocrText },
       ],
       format: receiptSchema,
@@ -121,7 +129,15 @@ async function parseReceiptWithOllama(ocrText: string): Promise<StructuredReceip
   try {
     return JSON.parse(content) as StructuredReceipt;
   } catch {
-    return { merchant: undefined, items: [], total: undefined, currency: undefined, date: undefined };
+    return {
+      merchant: undefined,
+      address: undefined,
+      date: undefined,
+      time: undefined,
+      currency: undefined,
+      total: undefined,
+      items: [],
+    };
   }
 }
 
@@ -180,10 +196,12 @@ export async function POST(request: Request) {
       ? await parseReceiptWithOllama(receiptText)
       : {
           merchant: undefined,
+          address: undefined,
           items: [],
           total: undefined,
           currency: undefined,
           date: undefined,
+          time: undefined,
         };
     const structuredFilePath = path.join(structuredDir, structuredFileName);
     await fs.writeFile(structuredFilePath, JSON.stringify(structured, null, 2));
