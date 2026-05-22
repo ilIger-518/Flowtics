@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { notFound } from "next/navigation";
-import ReceiptEditor from "./receipt-editor";
+import ReceiptEditor from "@/components/receipts/receipt-editor";
 import { resolveReceiptsDir, resolveStructuredDir } from "@/lib/paths";
 
 type StructuredReceipt = {

@@ -37,6 +37,7 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 	- `globals.css`: Global styles.
 	- `generated/prisma/`: Prisma Client output.
 - `components/nav/side-nav.tsx`: Collapsible SideNav UI.
+- `components/receipts/receipt-editor.tsx`: Receipt repair form UI.
 - `config/site.ts`: Navigation config for the SideNav.
 - `lib/utils.ts`: Utility helpers (class name merging).
 - `prisma/`

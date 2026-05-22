@@ -212,11 +212,13 @@ export default function ReceiptEditor({
         })),
     };
 
-    const response = await fetch(`/uploads/receipts/structured/${fileName}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const response = await fetch(`/uploads/receipts/structured/${fileName}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
 
     if (!response.ok) {
       setStatus("Save failed. Please retry.");
