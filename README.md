@@ -30,6 +30,8 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 	- `uploads/page.tsx`: Lists uploaded files with download links.
 	- `uploads/receipts/page.tsx`: Lists OCR and structured receipt JSON files.
 	- `uploads/[file]/route.ts`: Streams a file from `uploads/` as a download.
+	- `uploads/receipts/[file]/route.ts`: Streams OCR JSON from `uploads/receipts/`.
+	- `uploads/receipts/structured/[file]/route.ts`: Streams structured JSON from `uploads/receipts/structured/`.
 	- `dot-matrix.css`: Dot-matrix background utility from the template.
 	- `globals.css`: Global styles.
 	- `generated/prisma/`: Prisma Client output.
@@ -92,6 +94,12 @@ Example request:
 ```bash
 curl -O http://localhost:3000/uploads/2026-05-20:10-22-31-004_2f7d1b3d-2a9f-4b9f-8b3b-5b6a1d5c2b3f.jpg
 ```
+
+### `GET /uploads/receipts/[file]`
+- Response: OCR JSON download (content-type `application/json`).
+
+### `GET /uploads/receipts/structured/[file]`
+- Response: Structured JSON download (content-type `application/json`).
 
 ## Environment Variables and Configuration
 - `DATABASE_URL`: PostgreSQL connection string for Prisma.
