@@ -26,7 +26,7 @@ export default function DropPage() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "image/*": [], "application/pdf": [] },
+    accept: { "image/*": [] },
     maxFiles: 10,
   });
 
@@ -58,7 +58,7 @@ export default function DropPage() {
           {isDragActive ? (
             <p>Drop the images here...</p>
           ) : (
-            <p>Drag and drop images or PDFs here, or click to select files</p>
+            <p>Drag and drop images here, or click to select files</p>
           )}
 +          <p className="mt-2 text-xs text-muted-foreground">
 +            Up to 10 files per batch.
