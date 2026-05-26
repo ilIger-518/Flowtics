@@ -175,3 +175,8 @@ Migrations live under `prisma/migrations/`.
 - `recharts` and `sharp` are installed but unused.
 - OCR can fail if the API key is missing or Vision API is not enabled.
 - Structured parsing will fail if Ollama is not running or the model is not pulled locally.
+- VS Code’s CSS linting may flag Tailwind at-rules (`@theme`, `@apply`) unless `.vscode/settings.json` disables unknown-at-rule warnings.
+- TypeScript needs `**/*.css` included in `tsconfig.json` to avoid `./globals.css` side-effect import errors.
+
+## Troubleshooting Notes
+- If VS Code still reports TS2882 for `./globals.css`, ensure [global.d.ts](global.d.ts) declares `*.css` modules, `allowArbitraryExtensions` is enabled in `tsconfig.json`, and restart the TypeScript server.
