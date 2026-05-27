@@ -180,3 +180,4 @@ Migrations live under `prisma/migrations/`.
 
 ## Troubleshooting Notes
 - If VS Code still reports TS2882 for `./globals.css`, ensure [global.d.ts](global.d.ts) declares `*.css` modules, `allowArbitraryExtensions` is enabled in `tsconfig.json`, and restart the TypeScript server.
+- Vim swap files are ignored via `.gitignore` (`*.swp`, `*.swo`, `*.swn`, `*~`).
