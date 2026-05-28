@@ -67,6 +67,7 @@ type TradeRepublicRow = {
 };
 
 const tradeRepublicDir = resolveTradeRepublicDir();
+const mappingPath = path.join(tradeRepublicDir, "mapping.json");
 
 function normalizeHeader(value: string) {
   return value.trim().toLowerCase();
@@ -173,9 +174,23 @@ function formatShortLabel(date: Date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
 }
 
-function resolveHeaderMap(headers: string[]) {
+type HeaderMapping = {
+  date?: string;
+  amount?: string;
+  currency?: string;
+  type?: string;
+  description?: string;
+};
+
+function resolveHeaderMap(headers: string[], mapping?: HeaderMapping) {
   const map = new Map<string, number>();
   headers.forEach((header, index) => map.set(normalizeHeader(header), index));
+
+  const resolveMappedKey = (value?: string) => {
+    if (!value) return null;
+    const idx = map.get(normalizeHeader(value));
+    return idx !== undefined ? idx : null;
+  };
 
   const resolveKey = (candidates: string[]) => {
     for (const candidate of candidates) {
@@ -186,12 +201,34 @@ function resolveHeaderMap(headers: string[]) {
   };
 
   return {
-    dateIndex: resolveKey(["date", "datum", "buchungstag", "transaction date"]),
-    amountIndex: resolveKey(["amount", "betrag", "summe", "wert", "transaktionsbetrag"]),
-    currencyIndex: resolveKey(["currency", "währung", "waehrung", "curr"]),
-    typeIndex: resolveKey(["type", "typ", "transaction type", "buchungstyp", "kategorie"]),
-    descriptionIndex: resolveKey(["description", "verwendungszweck", "details", "beschreibung", "name"]),
+    dateIndex:
+      resolveMappedKey(mapping?.date) ??
+      resolveKey(["date", "datum", "buchungstag", "transaction date"]),
+    amountIndex:
+      resolveMappedKey(mapping?.amount) ??
+      resolveKey(["amount", "betrag", "summe", "wert", "transaktionsbetrag"]),
+    currencyIndex:
+      resolveMappedKey(mapping?.currency) ??
+      resolveKey(["currency", "währung", "waehrung", "curr"]),
+    typeIndex:
+      resolveMappedKey(mapping?.type) ??
+      resolveKey(["type", "typ", "transaction type", "buchungstyp", "kategorie"]),
+    descriptionIndex:
+      resolveMappedKey(mapping?.description) ??
+      resolveKey(["description", "verwendungszweck", "details", "beschreibung", "name"]),
   };
+}
+
+async function readHeaderMapping(): Promise<HeaderMapping> {
+  try {
+    const raw = await fs.readFile(mappingPath, "utf-8");
+    return JSON.parse(raw) as HeaderMapping;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      return {};
+    }
+    return {};
+  }
 }
 
 async function listTradeRepublicFiles() {
@@ -214,8 +251,9 @@ async function parseCsvFile(fileName: string) {
 
   const delimiter = pickDelimiter(lines[0]);
   const headers = splitCsvLine(lines[0], delimiter);
+  const mapping = await readHeaderMapping();
   const { dateIndex, amountIndex, currencyIndex, typeIndex, descriptionIndex } =
-    resolveHeaderMap(headers);
+    resolveHeaderMap(headers, mapping);
 
   if (dateIndex === null || amountIndex === null) {
     return [] as TradeRepublicRow[];

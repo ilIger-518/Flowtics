@@ -33,6 +33,7 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 	- `api/upload/route.ts`: Accepts `multipart/form-data` uploads and writes files to `uploads/`.
 	- `api/receipts/views/route.ts`: Stores and retrieves saved receipt filter views.
 	- `api/trade-republic/route.ts`: Stores Trade Republic CSV exports under `uploads/trade-republic/`.
+	- `api/trade-republic/mapping/route.ts`: Stores header mappings for Trade Republic CSV parsing.
 	- `uploads/trade-republic/[file]/route.ts`: Streams Trade Republic CSV downloads.
 	- `uploads/page.tsx`: Lists uploaded files with download links.
 	- `uploads/receipts/page.tsx`: Lists OCR and structured receipt JSON files.
@@ -139,6 +140,13 @@ curl -O http://localhost:3000/uploads/2026-05-20:10-22-31-004_2f7d1b3d-2a9f-4b9f
 
 ### `GET /api/trade-republic`
 - Response: JSON list of stored CSV export filenames.
+
+### `GET /api/trade-republic/mapping`
+- Response: JSON header list and stored mapping.
+
+### `POST /api/trade-republic/mapping`
+- Request: JSON with header mapping fields.
+- Response: `{ "ok": true }` with the stored mapping.
 
 ### `GET /uploads/trade-republic/[file]`
 - Response: CSV download (content-type `text/csv`).
@@ -252,6 +260,7 @@ Migrations live under `prisma/migrations/`.
 - Merchant insights group by raw merchant strings, so inconsistent naming can split totals.
 - Trade Republic CSV exports are stored separately and are not included in receipt analytics.
 - Trade Republic analytics rely on CSV headers; files missing date or amount headers are skipped.
+- Header mappings are stored in `uploads/trade-republic/mapping.json`.
 - Trade Republic category breakdowns map CSV types into Buy/Sell/Dividend/Fees/Card using keyword matching.
 - Receipt saved views are stored in `uploads/saved-views/receipts.json`.
 

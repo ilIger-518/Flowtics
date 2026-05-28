@@ -15,6 +15,15 @@ export default function TradeRepublicPage() {
   const [stored, setStored] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [mappingHeaders, setMappingHeaders] = useState<string[]>([]);
+  const [mappingStatus, setMappingStatus] = useState<string | null>(null);
+  const [mapping, setMapping] = useState({
+    date: "",
+    amount: "",
+    currency: "",
+    type: "",
+    description: "",
+  });
 
   const loadFiles = async () => {
     try {
@@ -29,7 +38,29 @@ export default function TradeRepublicPage() {
 
   useEffect(() => {
     loadFiles();
+    loadMapping();
   }, []);
+
+  const loadMapping = async () => {
+    try {
+      const response = await fetch("/api/trade-republic/mapping", { cache: "no-store" });
+      if (!response.ok) return;
+      const data = (await response.json()) as {
+        headers?: string[];
+        mapping?: { date?: string; amount?: string; currency?: string; type?: string; description?: string };
+      };
+      setMappingHeaders(data.headers ?? []);
+      setMapping({
+        date: data.mapping?.date ?? "",
+        amount: data.mapping?.amount ?? "",
+        currency: data.mapping?.currency ?? "",
+        type: data.mapping?.type ?? "",
+        description: data.mapping?.description ?? "",
+      });
+    } catch {
+      setMappingHeaders([]);
+    }
+  };
 
   const handleSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const list = Array.from(event.target.files ?? []);
@@ -60,11 +91,30 @@ export default function TradeRepublicPage() {
       setStored((prev) => [...uploaded, ...prev]);
       setFiles([]);
       setStatus("Upload complete.");
+      loadMapping();
     } catch (err) {
       console.error(err);
       setStatus("Upload failed.");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleSaveMapping = async () => {
+    setMappingStatus(null);
+    try {
+      const response = await fetch("/api/trade-republic/mapping", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(mapping),
+      });
+      if (!response.ok) {
+        setMappingStatus("Failed to save mapping.");
+        return;
+      }
+      setMappingStatus("Mapping saved.");
+    } catch {
+      setMappingStatus("Failed to save mapping.");
     }
   };
 
@@ -119,6 +169,61 @@ export default function TradeRepublicPage() {
             </p>
           ) : null}
           {status ? <p className="mt-2 text-sm text-muted-foreground">{status}</p> : null}
+        </section>
+
+        <section className="rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium">Header mapping</h2>
+            <button
+              type="button"
+              onClick={loadMapping}
+              className="text-sm text-blue-600 underline"
+            >
+              Refresh
+            </button>
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            If CSV headers do not match automatically, map them here so analytics can parse the file.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {([
+              { key: "date", label: "Date" },
+              { key: "amount", label: "Amount" },
+              { key: "currency", label: "Currency" },
+              { key: "type", label: "Type" },
+              { key: "description", label: "Description" },
+            ] as const).map((field) => (
+              <label key={field.key} className="text-sm">
+                <span className="text-xs text-muted-foreground">{field.label}</span>
+                <select
+                  value={mapping[field.key]}
+                  onChange={(event) =>
+                    setMapping((prev) => ({ ...prev, [field.key]: event.target.value }))
+                  }
+                  className="mt-1 w-full rounded border border-border bg-background px-2 py-1"
+                >
+                  <option value="">Not mapped</option>
+                  {mappingHeaders.map((header) => (
+                    <option key={header} value={header}>
+                      {header}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSaveMapping}
+              className="rounded bg-primary px-4 py-2 text-sm text-white"
+            >
+              Save mapping
+            </button>
+            {mappingStatus ? (
+              <span className="text-xs text-muted-foreground">{mappingStatus}</span>
+            ) : null}
+          </div>
         </section>
 
         <section className="rounded-lg border border-border bg-card p-4">
