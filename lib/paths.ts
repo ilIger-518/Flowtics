@@ -25,3 +25,7 @@ export function resolveReceiptsDir() {
 export function resolveStructuredDir() {
   return path.join(resolveReceiptsDir(), "structured");
 }
+
+export function resolveTradeRepublicDir() {
+  return path.join(resolveUploadsDir(), "trade-republic");
+}

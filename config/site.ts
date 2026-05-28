@@ -11,6 +11,7 @@ export const siteConfig = {
 export const navigations: Navigation[] = [
   { name: "Dashboard", href: "/" },
   { name: "Reports", href: "/reports" },
+  { name: "Trade Republic", href: "/trade-republic" },
   { name: "Drop files", href: "/drop" },
   { name: "Uploads", href: "/uploads" },
   { name: "Receipts", href: "/uploads/receipts" },
