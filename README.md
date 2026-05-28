@@ -276,6 +276,7 @@ Migrations live under `prisma/migrations/`.
 - Card transaction tags are stored in `uploads/trade-republic/card-tags.json`.
 - Trade Republic category breakdowns map CSV types into Buy/Sell/Dividend/Fees/Card using keyword matching.
 - Receipt saved views are stored in `uploads/saved-views/receipts.json`.
+- Duplicate detection flags receipts with the same merchant, date, and total.
 
 ## Troubleshooting Notes
 - If VS Code still reports TS2882 for `./globals.css`, ensure [global.d.ts](global.d.ts) declares `*.css` modules, `allowArbitraryExtensions` is enabled in `tsconfig.json`, and restart the TypeScript server.

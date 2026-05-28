@@ -17,6 +17,8 @@ export type ReceiptSummary = {
   date: string | null;
   total: number | null;
   currency: string;
+  duplicateKey: string | null;
+  duplicateCount: number;
 };
 
 const structuredDir = resolveStructuredDir();
@@ -79,6 +81,13 @@ function categorizeReceipt(merchant: string, items?: StructuredReceipt["items"])
   return "Other";
 }
 
+function buildDuplicateKey(merchant: string, date: string | null, total: number | null) {
+  if (!date || total === null) return null;
+  const keyMerchant = merchant.trim().toLowerCase();
+  const keyTotal = total.toFixed(2);
+  return `${date}::${keyMerchant}::${keyTotal}`;
+}
+
 async function listStructuredFiles() {
   try {
     const entries = await fs.readdir(structuredDir);
@@ -116,15 +125,34 @@ export async function getReceiptSummaries(): Promise<ReceiptSummary[]> {
     const dateValue = parseDate(data.date);
     const date = dateValue ? dateValue.toISOString().slice(0, 10) : null;
 
+    const total = typeof data.total === "number" ? data.total : null;
+    const duplicateKey = buildDuplicateKey(merchant, date, total);
+
     summaries.push({
       fileName,
       merchant,
       category,
       date,
-      total: typeof data.total === "number" ? data.total : null,
+      total,
       currency: normalizeCurrency(data.currency),
+      duplicateKey,
+      duplicateCount: 1,
     });
   }
+
+  const duplicateCounts = new Map<string, number>();
+  summaries.forEach((summary) => {
+    if (!summary.duplicateKey) return;
+    duplicateCounts.set(
+      summary.duplicateKey,
+      (duplicateCounts.get(summary.duplicateKey) ?? 0) + 1
+    );
+  });
+
+  summaries.forEach((summary) => {
+    if (!summary.duplicateKey) return;
+    summary.duplicateCount = duplicateCounts.get(summary.duplicateKey) ?? 1;
+  });
 
   return summaries.sort((a, b) => {
     if (!a.date && !b.date) return a.fileName.localeCompare(b.fileName);

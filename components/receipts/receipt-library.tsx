@@ -58,6 +58,19 @@ export default function ReceiptLibrary({ data }: { data: ReceiptSummary[] }) {
     return Array.from(new Set(data.map((item) => item.category))).sort();
   }, [data]);
 
+  const duplicates = useMemo(() => {
+    const groups = new Map<string, ReceiptSummary[]>();
+    data.forEach((item) => {
+      if (!item.duplicateKey || item.duplicateCount < 2) return;
+      const list = groups.get(item.duplicateKey) ?? [];
+      list.push(item);
+      groups.set(item.duplicateKey, list);
+    });
+    return [...groups.values()]
+      .map((group) => group.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "")))
+      .sort((a, b) => b.length - a.length);
+  }, [data]);
+
   const filtered = useMemo(() => {
     const minAmount = parseNumber(filters.minAmount);
     const maxAmount = parseNumber(filters.maxAmount);
@@ -289,6 +302,7 @@ export default function ReceiptLibrary({ data }: { data: ReceiptSummary[] }) {
                   <p className="font-medium">{item.merchant}</p>
                   <p className="text-xs text-muted-foreground">
                     {item.date ?? "No date"} · {item.category}
+                    {item.duplicateCount > 1 ? " · Possible duplicate" : ""}
                   </p>
                 </div>
                 <div className="text-right">
@@ -303,6 +317,39 @@ export default function ReceiptLibrary({ data }: { data: ReceiptSummary[] }) {
                   >
                     Review
                   </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-border bg-card p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-medium">Possible duplicates</h2>
+          <span className="text-sm text-muted-foreground">{duplicates.length} group(s)</span>
+        </div>
+        {duplicates.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">No duplicates detected.</p>
+        ) : (
+          <div className="mt-3 space-y-4 text-sm">
+            {duplicates.map((group) => (
+              <div key={group[0].duplicateKey ?? group[0].fileName} className="rounded-md border border-border p-3">
+                <p className="text-xs text-muted-foreground">
+                  {group[0].merchant} · {group[0].date ?? "No date"} · {group[0].total !== null ? formatCurrency(group[0].total, group[0].currency) : "No total"}
+                </p>
+                <div className="mt-2 space-y-2">
+                  {group.map((item) => (
+                    <div key={item.fileName} className="flex items-center justify-between gap-2">
+                      <span className="truncate">{item.fileName}</span>
+                      <Link
+                        href={`/receipts/${encodeURIComponent(item.fileName)}`}
+                        className="text-xs text-blue-600 underline"
+                      >
+                        Review
+                      </Link>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
