@@ -75,6 +75,7 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 10) Trade Republic CSV exports are uploaded to a separate storage folder and are not merged into receipts.
 11) The Trade Republic reports page parses CSV exports (trading + card transactions) into separate analytics with Card-only and Trading-only presets, URL-persisted filters, and portfolio snapshots by ISIN/instrument.
 13) The reports page aggregates structured receipts into day/week/month charts, category totals, and merchant insights with search and drill-down.
+	- Trade Republic headline totals use the CSV `category` column and only include `CASH` rows (top-ups, transfers, fees), with net reflecting the export period change.
 14) A left SideNav provides navigation between "Dashboard", "Reports", "Trade Republic", "Drop files", "Uploads", and receipt views.
 
 ## API Endpoints

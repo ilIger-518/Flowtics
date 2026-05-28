@@ -28,6 +28,7 @@ export type TradeRepublicReportRow = {
   type: string;
   description: string;
   category: string;
+  sourceCategory: string | null;
   isin: string | null;
   instrument: string | null;
   quantity: number | null;
@@ -83,6 +84,7 @@ type TradeRepublicRow = {
   type: string;
   description: string;
   category: string;
+  sourceCategory: string | null;
   isin: string | null;
   instrument: string | null;
   quantity: number | null;
@@ -176,7 +178,23 @@ function parseDate(raw?: string): Date | null {
 
 function parseAmount(raw?: string): number | null {
   if (!raw) return null;
-  const normalized = raw.replace(/\s/g, "").replace(/\./g, "").replace(/,/g, ".");
+  const cleaned = raw.replace(/\s/g, "");
+  const hasComma = cleaned.includes(",");
+  const hasDot = cleaned.includes(".");
+  let normalized = cleaned;
+
+  if (hasComma && hasDot) {
+    const lastComma = cleaned.lastIndexOf(",");
+    const lastDot = cleaned.lastIndexOf(".");
+    if (lastComma > lastDot) {
+      normalized = cleaned.replace(/\./g, "").replace(/,/g, ".");
+    } else {
+      normalized = cleaned.replace(/,/g, "");
+    }
+  } else if (hasComma) {
+    normalized = cleaned.replace(/,/g, ".");
+  }
+
   const num = Number.parseFloat(normalized);
   return Number.isFinite(num) ? num : null;
 }
@@ -217,6 +235,7 @@ type HeaderMapping = {
   currency?: string;
   type?: string;
   description?: string;
+  category?: string;
   isin?: string;
   instrument?: string;
   quantity?: string;
@@ -256,6 +275,9 @@ function resolveHeaderMap(headers: string[], mapping?: HeaderMapping) {
     descriptionIndex:
       resolveMappedKey(mapping?.description) ??
       resolveKey(["description", "verwendungszweck", "details", "beschreibung", "name"]),
+    categoryIndex:
+      resolveMappedKey(mapping?.category) ??
+      resolveKey(["category", "kategorie", "category type"]),
     isinIndex:
       resolveMappedKey(mapping?.isin) ??
       resolveKey(["isin", "isin code", "security isin"]),
@@ -326,6 +348,7 @@ async function parseCsvFile(fileName: string, cardTags: CardTags) {
     currencyIndex,
     typeIndex,
     descriptionIndex,
+    categoryIndex,
     isinIndex,
     instrumentIndex,
     quantityIndex,
@@ -346,6 +369,7 @@ async function parseCsvFile(fileName: string, cardTags: CardTags) {
     const currency = normalizeCurrency(currencyIndex !== null ? columns[currencyIndex] : "EUR");
     const type = typeIndex !== null ? (columns[typeIndex] || "Unknown") : "Unknown";
     const description = descriptionIndex !== null ? (columns[descriptionIndex] || "") : "";
+    const sourceCategory = categoryIndex !== null ? (columns[categoryIndex] || "").trim() : "";
     const category = mapTradeRepublicCategory(type, description);
     const isin = isinIndex !== null ? (columns[isinIndex] || "").trim() : "";
     const instrument = instrumentIndex !== null ? (columns[instrumentIndex] || "").trim() : "";
@@ -361,6 +385,7 @@ async function parseCsvFile(fileName: string, cardTags: CardTags) {
       type,
       description,
       category,
+      sourceCategory: sourceCategory || null,
       isin: isin || null,
       instrument: instrument || null,
       quantity: quantity ?? null,
@@ -505,6 +530,9 @@ export async function getTradeRepublicReportData(): Promise<TradeRepublicReportD
 
   const inflow = filtered.filter((row) => row.amount > 0).reduce((acc, row) => acc + row.amount, 0);
   const outflow = filtered.filter((row) => row.amount < 0).reduce((acc, row) => acc + Math.abs(row.amount), 0);
+  const cashRows = filtered.filter((row) => (row.sourceCategory ?? "").toLowerCase() === "cash");
+  const cashInflow = cashRows.filter((row) => row.amount > 0).reduce((acc, row) => acc + row.amount, 0);
+  const cashOutflow = cashRows.filter((row) => row.amount < 0).reduce((acc, row) => acc + Math.abs(row.amount), 0);
 
   const today = new Date();
   const weekStart = startOfWeek(today);
@@ -563,9 +591,9 @@ export async function getTradeRepublicReportData(): Promise<TradeRepublicReportD
   return {
     currency,
     totals: {
-      inflow,
-      outflow,
-      net: inflow - outflow,
+      inflow: cashInflow,
+      outflow: cashOutflow,
+      net: cashInflow - cashOutflow,
     },
     counts: {
       rows: filtered.length,
@@ -589,6 +617,7 @@ export async function getTradeRepublicReportData(): Promise<TradeRepublicReportD
       type: row.type,
       description: row.description,
       category: row.category,
+      sourceCategory: row.sourceCategory,
       isin: row.isin,
       instrument: row.instrument,
       quantity: row.quantity,

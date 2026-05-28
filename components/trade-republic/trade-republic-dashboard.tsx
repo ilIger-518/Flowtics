@@ -386,8 +386,12 @@ export default function TradeRepublicDashboard({ data }: { data: TradeRepublicRe
     }
   };
 
-  const inflow = filteredRows.filter((row) => row.amount > 0).reduce((acc, row) => acc + row.amount, 0);
-  const outflow = filteredRows
+  const cashRows = useMemo(
+    () => data.rows.filter((row) => (row.sourceCategory ?? "").toLowerCase() === "cash"),
+    [data.rows]
+  );
+  const inflow = cashRows.filter((row) => row.amount > 0).reduce((acc, row) => acc + row.amount, 0);
+  const outflow = cashRows
     .filter((row) => row.amount < 0)
     .reduce((acc, row) => acc + Math.abs(row.amount), 0);
 
@@ -442,9 +446,13 @@ export default function TradeRepublicDashboard({ data }: { data: TradeRepublicRe
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card title="Inflow" value={formatCurrency(inflow, data.currency)} />
-        <Card title="Outflow" value={formatCurrency(outflow, data.currency)} />
-        <Card title="Net" value={formatCurrency(inflow - outflow, data.currency)} />
+        <Card title="Cash inflow" value={formatCurrency(inflow, data.currency)} />
+        <Card title="Cash outflow" value={formatCurrency(outflow, data.currency)} />
+        <Card
+          title="Cash net"
+          value={formatCurrency(inflow - outflow, data.currency)}
+          helper="Change over export period"
+        />
         <Card
           title="Rows"
           value={`${filteredRows.length}`}
