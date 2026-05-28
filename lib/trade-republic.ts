@@ -246,13 +246,32 @@ function buildCategoryBreakdown(rows: TradeRepublicRow[]) {
   const totals = new Map<string, number>();
   rows.forEach((row) => {
     if (row.amount >= 0) return;
-    const key = row.type || "Other";
+    const key = mapTradeRepublicCategory(row);
     totals.set(key, (totals.get(key) ?? 0) + Math.abs(row.amount));
   });
 
   return [...totals.entries()]
     .map(([category, total]) => ({ category, total }))
     .sort((a, b) => b.total - a.total);
+}
+
+function mapTradeRepublicCategory(row: TradeRepublicRow) {
+  const type = row.type.toLowerCase();
+  const description = row.description.toLowerCase();
+  const text = `${type} ${description}`;
+
+  if (text.includes("dividend") || text.includes("ausschütt")) return "Dividend";
+  if (text.includes("fee") || text.includes("gebühr") || text.includes("commission")) {
+    return "Fees";
+  }
+  if (text.includes("buy") || text.includes("kauf") || text.includes("purchase")) {
+    return "Buy";
+  }
+  if (text.includes("sell") || text.includes("verkauf") || text.includes("sale")) {
+    return "Sell";
+  }
+
+  return row.type || "Other";
 }
 
 function buildSeries(rows: TradeRepublicRow[], range: Array<{ key: string; label: string }>, keyFn: (row: TradeRepublicRow) => string) {
