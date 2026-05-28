@@ -175,17 +175,51 @@ npm run dev
 - Effects via `useEffect` for cleanup of object URLs.
 
 ## Database Schema and Migrations
-Prisma uses a PostgreSQL datasource. The `Receipt` model is defined in [prisma/schema.prisma](prisma/schema.prisma):
+Prisma uses a PostgreSQL datasource. The current models are defined in [prisma/schema.prisma](prisma/schema.prisma):
 
 - `Receipt`
 	- `id` (Int, primary key)
-	- `merchant` (String, nullable)
+	- `merchant` / `merchantKey` (String, nullable)
 	- `total` (Float, nullable)
-	- `category` (String, nullable)
+	- `category` / `categoryKey` (String, nullable)
+	- `currency` (String, nullable)
 	- `receiptDate` (DateTime, nullable)
 	- `imagePath` (String)
+	- `ocrPath` / `structuredPath` (String, nullable)
 	- `rawText` (String, nullable)
-	- `createdAt` (DateTime, defaults to now)
+	- `ocrConfidence` (Float, nullable)
+	- `needsReview` (Boolean, default false)
+	- `duplicateOfId` (Int, nullable)
+	- `createdAt` / `updatedAt` (DateTime)
+
+- `SavedView`
+	- `name` (String)
+	- `scope` (String)
+	- `filters` (Json)
+	- `createdAt` / `updatedAt` (DateTime)
+
+- `MerchantAlias`
+	- `rawName` (String, unique)
+	- `normalized` (String)
+	- `createdAt` / `updatedAt` (DateTime)
+
+- `TradeRepublicImport`
+	- `fileName` (String)
+	- `originalName` (String, nullable)
+	- `uploadedAt` (DateTime)
+	- `rows` (TradeRepublicRow relation)
+
+- `TradeRepublicRow`
+	- `date` (DateTime)
+	- `amount` (Float)
+	- `currency` (String)
+	- `type` (String)
+	- `description` (String, nullable)
+	- `category` (String)
+	- `isin` / `instrument` (String, nullable)
+	- `merchant` (String, nullable)
+	- `kind` (String, trading vs card)
+	- `createdAt` (DateTime)
 
 Migrations live under `prisma/migrations/`.
 
