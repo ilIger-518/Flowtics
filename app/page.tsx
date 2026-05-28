@@ -46,15 +46,36 @@ export default async function Page() {
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-lg border border-border bg-card p-4">
-            <p className="text-sm text-muted-foreground">Uploads</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Uploads</p>
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+                  <path d="M10 3l4 4h-3v6H9V7H6l4-4zM4 15h12v2H4v-2z" fill="currentColor" />
+                </svg>
+              </span>
+            </div>
             <p className="mt-2 text-2xl font-semibold">{uploadCount}</p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
-            <p className="text-sm text-muted-foreground">OCR Files</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">OCR Files</p>
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+                  <path d="M6 3h6l4 4v10H6V3zm6 1.5V8h3.5L12 4.5zM8 11h6v2H8v-2z" fill="currentColor" />
+                </svg>
+              </span>
+            </div>
             <p className="mt-2 text-2xl font-semibold">{ocrCount}</p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
-            <p className="text-sm text-muted-foreground">Structured</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Structured</p>
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+                  <path d="M4 5h12v10H4V5zm2 2v6h2V7H6zm4 0v6h2V7h-2zm4 0v6h2V7h-2z" fill="currentColor" />
+                </svg>
+              </span>
+            </div>
             <p className="mt-2 text-2xl font-semibold">{structuredCount}</p>
           </div>
         </div>

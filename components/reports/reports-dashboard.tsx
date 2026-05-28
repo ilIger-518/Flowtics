@@ -69,10 +69,17 @@ function formatShortDate(value: string) {
   return date.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
 }
 
-function Card({ title, value, helper }: { title: string; value: string; helper?: string }) {
+function Card({ title, value, helper, icon }: { title: string; value: string; helper?: string; icon?: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-border bg-card p-4">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{title}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">{title}</p>
+        {icon ? (
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+            {icon}
+          </span>
+        ) : null}
+      </div>
       <p className="mt-2 text-2xl font-semibold">{value}</p>
       {helper ? <p className="mt-1 text-xs text-muted-foreground">{helper}</p> : null}
     </div>
@@ -289,9 +296,33 @@ export default function ReportsDashboard({ data }: { data: ReportData }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card title="Today" value={formatCurrency(data.totals.day, data.currency)} />
-        <Card title="This week" value={formatCurrency(data.totals.week, data.currency)} />
-        <Card title="This month" value={formatCurrency(data.totals.month, data.currency)} />
+        <Card
+          title="Today"
+          value={formatCurrency(data.totals.day, data.currency)}
+          icon={
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+              <path d="M6 2v2m8-2v2M3 7h14v9H3V7zm2 3h4v4H5v-4z" fill="currentColor" />
+            </svg>
+          }
+        />
+        <Card
+          title="This week"
+          value={formatCurrency(data.totals.week, data.currency)}
+          icon={
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+              <path d="M4 4h12v12H4V4zm2 2v2h8V6H6zm0 4v4h8v-4H6z" fill="currentColor" />
+            </svg>
+          }
+        />
+        <Card
+          title="This month"
+          value={formatCurrency(data.totals.month, data.currency)}
+          icon={
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+              <path d="M5 3h10v2H5V3zm-1 4h12v10H4V7zm3 2v6h2V9H7zm4 0v6h2V9h-2z" fill="currentColor" />
+            </svg>
+          }
+        />
         <Card
           title="All time"
           value={formatCurrency(data.totals.all, data.currency)}

@@ -117,10 +117,17 @@ function buildCategoryBreakdown(rows: TradeRepublicReportRow[]) {
     .sort((a, b) => b.total - a.total);
 }
 
-function Card({ title, value, helper }: { title: string; value: string; helper?: string }) {
+function Card({ title, value, helper, icon }: { title: string; value: string; helper?: string; icon?: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-border bg-card p-4">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{title}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">{title}</p>
+        {icon ? (
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+            {icon}
+          </span>
+        ) : null}
+      </div>
       <p className="mt-2 text-2xl font-semibold">{value}</p>
       {helper ? <p className="mt-1 text-xs text-muted-foreground">{helper}</p> : null}
     </div>
@@ -446,17 +453,43 @@ export default function TradeRepublicDashboard({ data }: { data: TradeRepublicRe
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card title="Cash inflow" value={formatCurrency(inflow, data.currency)} />
-        <Card title="Cash outflow" value={formatCurrency(outflow, data.currency)} />
+        <Card
+          title="Cash inflow"
+          value={formatCurrency(inflow, data.currency)}
+          icon={
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+              <path d="M10 3l4 4h-3v6H9V7H6l4-4zM4 15h12v2H4v-2z" fill="currentColor" />
+            </svg>
+          }
+        />
+        <Card
+          title="Cash outflow"
+          value={formatCurrency(outflow, data.currency)}
+          icon={
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+              <path d="M10 17l-4-4h3V7h2v6h3l-4 4zM4 3h12v2H4V3z" fill="currentColor" />
+            </svg>
+          }
+        />
         <Card
           title="Cash net"
           value={formatCurrency(inflow - outflow, data.currency)}
           helper="Change over export period"
+          icon={
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+              <path d="M4 10h12v2H4v-2zm1-5h10v2H5V5zm0 8h10v2H5v-2z" fill="currentColor" />
+            </svg>
+          }
         />
         <Card
           title="Rows"
           value={`${filteredRows.length}`}
           helper={`Range ${data.range.start ?? "-"} to ${data.range.end ?? "-"}`}
+          icon={
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+              <path d="M4 4h12v2H4V4zm0 5h12v2H4V9zm0 5h12v2H4v-2z" fill="currentColor" />
+            </svg>
+          }
         />
       </div>
 
