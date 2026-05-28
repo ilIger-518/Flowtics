@@ -168,6 +168,65 @@ function CategoryChart({ data, currency }: { data: TradeRepublicCategoryPoint[];
 }
 
 export default function TradeRepublicDashboard({ data }: { data: TradeRepublicReportData }) {
+  const [filters, setFilters] = useState<string[]>([]);
+
+  const categories = ["Buy", "Sell", "Dividend", "Fees", "Card"];
+  const activeFilters = filters.length > 0 ? filters : categories;
+
+  const filteredRows = useMemo(() => {
+    if (data.rows.length === 0) return [];
+    return data.rows.filter((row) => activeFilters.includes(row.category));
+  }, [data.rows, activeFilters]);
+
+  const inflow = filteredRows.filter((row) => row.amount > 0).reduce((acc, row) => acc + row.amount, 0);
+  const outflow = filteredRows
+    .filter((row) => row.amount < 0)
+    .reduce((acc, row) => acc + Math.abs(row.amount), 0);
+
+  const today = new Date();
+  const weekStart = startOfWeek(today);
+
+  const dailyRange: Array<{ key: string; label: string }> = [];
+  for (let i = 13; i >= 0; i -= 1) {
+    const date = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+    date.setUTCDate(date.getUTCDate() - i);
+    const key = formatDateKey(date.toISOString().slice(0, 10));
+    dailyRange.push({ key, label: formatShortDate(key) });
+  }
+
+  const weeklyRange: Array<{ key: string; label: string }> = [];
+  for (let i = 7; i >= 0; i -= 1) {
+    const date = new Date(weekStart);
+    date.setUTCDate(date.getUTCDate() - i * 7);
+    const key = formatDateKey(date.toISOString().slice(0, 10));
+    weeklyRange.push({ key, label: `Week of ${formatShortDate(key)}` });
+  }
+
+  const monthlyRange: Array<{ key: string; label: string }> = [];
+  for (let i = 5; i >= 0; i -= 1) {
+    const date = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+    date.setUTCMonth(date.getUTCMonth() - i);
+    const key = formatMonthKey(date);
+    const label = date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    monthlyRange.push({ key, label });
+  }
+
+  const daily = buildSeries(filteredRows, dailyRange, (row) => row.date);
+  const weekly = buildSeries(filteredRows, weeklyRange, (row) => {
+    const date = new Date(`${row.date}T00:00:00Z`);
+    return formatDateKey(startOfWeek(date).toISOString().slice(0, 10));
+  });
+  const monthly = buildSeries(filteredRows, monthlyRange, (row) => {
+    const date = new Date(`${row.date}T00:00:00Z`);
+    return formatMonthKey(date);
+  });
+
+  const categoriesData = buildCategoryBreakdown(filteredRows);
+  const topOutflows = filteredRows
+    .filter((row) => row.amount < 0)
+    .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
+    .slice(0, 8);
+
   if (data.counts.rows === 0) {
     return <EmptyState />;
   }
@@ -175,48 +234,83 @@ export default function TradeRepublicDashboard({ data }: { data: TradeRepublicRe
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card title="Inflow" value={formatCurrency(data.totals.inflow, data.currency)} />
-        <Card title="Outflow" value={formatCurrency(data.totals.outflow, data.currency)} />
-        <Card title="Net" value={formatCurrency(data.totals.net, data.currency)} />
+        <Card title="Inflow" value={formatCurrency(inflow, data.currency)} />
+        <Card title="Outflow" value={formatCurrency(outflow, data.currency)} />
+        <Card title="Net" value={formatCurrency(inflow - outflow, data.currency)} />
         <Card
           title="Rows"
-          value={`${data.counts.rows}`}
+          value={`${filteredRows.length}`}
           helper={`Range ${data.range.start ?? "-"} to ${data.range.end ?? "-"}`}
         />
       </div>
 
+      <div className="rounded-lg border border-border bg-card p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {categories.map((category) => {
+            const active = activeFilters.includes(category);
+            return (
+              <button
+                key={category}
+                type="button"
+                onClick={() => {
+                  setFilters((prev) =>
+                    prev.includes(category)
+                      ? prev.filter((item) => item !== category)
+                      : [...prev, category]
+                  );
+                }}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                  active
+                    ? "border-primary bg-primary text-white"
+                    : "border-border text-muted-foreground hover:border-primary"
+                }`}
+              >
+                {category}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => setFilters([])}
+            className="text-xs text-blue-600 underline"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
       <div className="grid gap-6 xl:grid-cols-2">
         <Section title="Daily outflow (last 14 days)">
-          <SeriesChart data={data.series.daily} currency={data.currency} type="daily" />
+          <SeriesChart data={daily} currency={data.currency} type="daily" />
         </Section>
         <Section title="Weekly outflow (last 8 weeks)">
-          <SeriesChart data={data.series.weekly} currency={data.currency} type="weekly" />
+          <SeriesChart data={weekly} currency={data.currency} type="weekly" />
         </Section>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Section title="Monthly outflow (last 6 months)">
-          <SeriesChart data={data.series.monthly} currency={data.currency} type="monthly" />
+          <SeriesChart data={monthly} currency={data.currency} type="monthly" />
         </Section>
         <Section title="Outflow by type">
-          <CategoryChart data={data.categories} currency={data.currency} />
+          <CategoryChart data={categoriesData} currency={data.currency} />
         </Section>
       </div>
 
       <Section title="Largest outflows">
-        {data.topOutflows.length === 0 ? (
+        {topOutflows.length === 0 ? (
           <p className="text-sm text-muted-foreground">No outflow data yet.</p>
         ) : (
           <div className="space-y-2 text-sm">
-            {data.topOutflows.map((entry) => (
+            {topOutflows.map((entry) => (
               <div
                 key={`${entry.fileName}-${entry.date}-${entry.amount}`}
                 className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
               >
                 <div>
-                  <p className="font-medium">{formatCurrency(entry.amount, data.currency)}</p>
+                  <p className="font-medium">{formatCurrency(Math.abs(entry.amount), data.currency)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatShortDate(entry.date)} · {entry.type} · {entry.description}
+                    {formatShortDate(entry.date)} · {entry.category} · {entry.description}
                   </p>
                 </div>
                 <span className="text-xs text-muted-foreground">{entry.fileName}</span>

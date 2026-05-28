@@ -16,7 +16,18 @@ export type TradeRepublicTopMovement = {
   date: string;
   description: string;
   type: string;
+  category: string;
   amount: number;
+  fileName: string;
+};
+
+export type TradeRepublicReportRow = {
+  date: string;
+  amount: number;
+  currency: string;
+  type: string;
+  description: string;
+  category: string;
   fileName: string;
 };
 
@@ -42,6 +53,7 @@ export type TradeRepublicReportData = {
   };
   categories: TradeRepublicCategoryPoint[];
   topOutflows: TradeRepublicTopMovement[];
+  rows: TradeRepublicReportRow[];
 };
 
 type TradeRepublicRow = {
@@ -50,6 +62,7 @@ type TradeRepublicRow = {
   currency: string;
   type: string;
   description: string;
+  category: string;
   fileName: string;
 };
 
@@ -246,7 +259,7 @@ function buildCategoryBreakdown(rows: TradeRepublicRow[]) {
   const totals = new Map<string, number>();
   rows.forEach((row) => {
     if (row.amount >= 0) return;
-    const key = mapTradeRepublicCategory(row);
+    const key = row.category || "Other";
     totals.set(key, (totals.get(key) ?? 0) + Math.abs(row.amount));
   });
 
@@ -255,10 +268,10 @@ function buildCategoryBreakdown(rows: TradeRepublicRow[]) {
     .sort((a, b) => b.total - a.total);
 }
 
-function mapTradeRepublicCategory(row: TradeRepublicRow) {
-  const type = row.type.toLowerCase();
-  const description = row.description.toLowerCase();
-  const text = `${type} ${description}`;
+function mapTradeRepublicCategory(type: string, description: string) {
+  const typeValue = type.toLowerCase();
+  const descriptionValue = description.toLowerCase();
+  const text = `${typeValue} ${descriptionValue}`;
 
   if (text.includes("dividend") || text.includes("ausschütt")) return "Dividend";
   if (text.includes("fee") || text.includes("gebühr") || text.includes("commission")) {
@@ -270,8 +283,11 @@ function mapTradeRepublicCategory(row: TradeRepublicRow) {
   if (text.includes("sell") || text.includes("verkauf") || text.includes("sale")) {
     return "Sell";
   }
+  if (text.includes("card") || text.includes("karte") || text.includes("card payment")) {
+    return "Card";
+  }
 
-  return row.type || "Other";
+  return type || "Other";
 }
 
 function buildSeries(rows: TradeRepublicRow[], range: Array<{ key: string; label: string }>, keyFn: (row: TradeRepublicRow) => string) {
@@ -355,6 +371,7 @@ export async function getTradeRepublicReportData(): Promise<TradeRepublicReportD
       date: formatDateKey(row.date),
       description: row.description || row.type,
       type: row.type,
+      category: row.category,
       amount: Math.abs(row.amount),
       fileName: row.fileName,
     }));
@@ -381,5 +398,14 @@ export async function getTradeRepublicReportData(): Promise<TradeRepublicReportD
     },
     categories: buildCategoryBreakdown(filtered),
     topOutflows,
+    rows: filtered.map((row) => ({
+      date: formatDateKey(row.date),
+      amount: row.amount,
+      currency: row.currency,
+      type: row.type,
+      description: row.description,
+      category: row.category,
+      fileName: row.fileName,
+    })),
   };
 }

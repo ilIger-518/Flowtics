@@ -75,8 +75,8 @@ export default function TradeRepublicPage() {
           <div>
             <h1 className="text-3xl font-semibold">Trade Republic Imports</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Upload Trade Republic CSV exports. These files are stored separately
-              and are not included in receipt analytics to avoid double counting.
+              Upload Trade Republic CSV exports (trading and card transactions). These files are stored
+              separately and are not included in receipt analytics to avoid double counting.
             </p>
           </div>
           <a
