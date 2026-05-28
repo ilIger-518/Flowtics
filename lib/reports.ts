@@ -30,6 +30,14 @@ export type MerchantPoint = {
   lastSeen: string;
 };
 
+export type MerchantReceipt = {
+  merchant: string;
+  total: number;
+  date: string;
+  category: string;
+  fileName: string;
+};
+
 export type ReportData = {
   currency: string;
   totals: {
@@ -53,6 +61,7 @@ export type ReportData = {
   };
   categories: CategoryPoint[];
   merchants: MerchantPoint[];
+  merchantReceipts: MerchantReceipt[];
 };
 
 type NormalizedReceipt = {
@@ -367,5 +376,14 @@ export async function getReportData(): Promise<ReportData> {
     },
     categories: buildCategoryBreakdown(filtered),
     merchants: buildMerchantInsights(filtered),
+    merchantReceipts: filtered
+      .map((receipt) => ({
+        merchant: receipt.merchant,
+        total: receipt.total,
+        date: formatDateKey(receipt.date),
+        category: receipt.category,
+        fileName: receipt.fileName,
+      }))
+      .sort((a, b) => b.date.localeCompare(a.date)),
   };
 }

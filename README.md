@@ -61,7 +61,7 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 7) The uploads page lists current files and links to `/uploads/[file]` for download.
 8) The receipts page lists OCR and structured JSON outputs for each upload, with links to a repair view.
 9) The receipt repair view shows the original image and lets users edit structured fields.
-10) The reports page aggregates structured receipts into day/week/month charts, category totals, and merchant insights.
+10) The reports page aggregates structured receipts into day/week/month charts, category totals, and merchant insights with search and drill-down.
 11) A left SideNav provides navigation between "Dashboard", "Reports", "Drop files", "Uploads", and "Receipts".
 
 ## API Endpoints

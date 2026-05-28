@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Area,
   AreaChart,
@@ -15,7 +17,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { CategoryPoint, MerchantPoint, ReportData, ReportSeriesPoint } from "@/lib/reports";
+import type {
+  CategoryPoint,
+  MerchantPoint,
+  MerchantReceipt,
+  ReportData,
+  ReportSeriesPoint,
+} from "@/lib/reports";
 
 const chartColors = [
   "#1f77b4",
@@ -53,6 +61,12 @@ function formatCompact(value: number, currency: string) {
   } catch {
     return `${value.toFixed(2)} ${currency}`.trim();
   }
+}
+
+function formatShortDate(value: string) {
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
 }
 
 function Card({ title, value, helper }: { title: string; value: string; helper?: string }) {
@@ -157,38 +171,111 @@ function CategoryChart({ data, currency }: { data: CategoryPoint[]; currency: st
   );
 }
 
-function MerchantInsights({ data, currency }: { data: MerchantPoint[]; currency: string }) {
-  const top = data.slice(0, 8);
+function MerchantInsights({
+  data,
+  receipts,
+  currency,
+}: {
+  data: MerchantPoint[];
+  receipts: MerchantReceipt[];
+  currency: string;
+}) {
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<string | null>(null);
 
-  if (top.length === 0) {
+  const filtered = useMemo(() => {
+    if (!query.trim()) return data;
+    const search = query.trim().toLowerCase();
+    return data.filter((entry) => entry.merchant.toLowerCase().includes(search));
+  }, [data, query]);
+
+  const top = filtered.slice(0, 12);
+  const selectedMerchant = selected ?? (top[0]?.merchant ?? null);
+  const selectedReceipts = useMemo(() => {
+    if (!selectedMerchant) return [];
+    return receipts.filter((entry) => entry.merchant === selectedMerchant);
+  }, [receipts, selectedMerchant]);
+
+  if (data.length === 0) {
     return <p className="text-sm text-muted-foreground">No merchant data yet.</p>;
   }
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-[1.6fr_1fr_1fr_0.8fr_1fr] gap-2 text-xs uppercase text-muted-foreground">
-        <span>Merchant</span>
-        <span className="text-right">Total</span>
-        <span className="text-right">Avg</span>
-        <span className="text-right">Receipts</span>
-        <span className="text-right">Last seen</span>
+    <div className="grid gap-6 xl:grid-cols-[1.15fr_1fr]">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <input
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            placeholder="Search merchants"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </div>
+        <div className="grid grid-cols-[1.6fr_1fr_1fr_0.8fr_1fr] gap-2 text-xs uppercase text-muted-foreground">
+          <span>Merchant</span>
+          <span className="text-right">Total</span>
+          <span className="text-right">Avg</span>
+          <span className="text-right">Receipts</span>
+          <span className="text-right">Last seen</span>
+        </div>
+        <div className="space-y-2">
+          {top.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No merchants match this search.</p>
+          ) : (
+            top.map((entry) => (
+              <button
+                key={entry.merchant}
+                type="button"
+                onClick={() => setSelected(entry.merchant)}
+                className={`grid w-full grid-cols-[1.6fr_1fr_1fr_0.8fr_1fr] gap-2 rounded-md px-2 py-1 text-left text-sm transition ${
+                  entry.merchant === selectedMerchant
+                    ? "bg-slate-100 text-slate-900"
+                    : "hover:bg-slate-50"
+                }`}
+              >
+                <span className="truncate" title={entry.merchant}>
+                  {entry.merchant}
+                </span>
+                <span className="text-right font-medium">
+                  {formatCurrency(entry.total, currency)}
+                </span>
+                <span className="text-right text-muted-foreground">
+                  {formatCurrency(entry.average, currency)}
+                </span>
+                <span className="text-right">{entry.count}</span>
+                <span className="text-right text-muted-foreground">{entry.lastSeen}</span>
+              </button>
+            ))
+          )}
+        </div>
       </div>
-      <div className="space-y-2">
-        {top.map((entry) => (
-          <div key={entry.merchant} className="grid grid-cols-[1.6fr_1fr_1fr_0.8fr_1fr] gap-2 text-sm">
-            <span className="truncate" title={entry.merchant}>
-              {entry.merchant}
-            </span>
-            <span className="text-right font-medium">
-              {formatCurrency(entry.total, currency)}
-            </span>
-            <span className="text-right text-muted-foreground">
-              {formatCurrency(entry.average, currency)}
-            </span>
-            <span className="text-right">{entry.count}</span>
-            <span className="text-right text-muted-foreground">{entry.lastSeen}</span>
-          </div>
-        ))}
+
+      <div className="space-y-3">
+        <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
+          {selectedMerchant ? `Receipts for ${selectedMerchant}` : "Select a merchant"}
+        </div>
+        <div className="space-y-2">
+          {selectedReceipts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No receipts for this merchant.</p>
+          ) : (
+            selectedReceipts.map((entry) => (
+              <div key={entry.fileName} className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm">
+                <div>
+                  <p className="font-medium">{formatCurrency(entry.total, currency)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatShortDate(entry.date)} · {entry.category}
+                  </p>
+                </div>
+                <Link
+                  className="text-xs text-blue-600 underline"
+                  href={`/receipts/${encodeURIComponent(entry.fileName)}`}
+                >
+                  View
+                </Link>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
@@ -230,8 +317,12 @@ export default function ReportsDashboard({ data }: { data: ReportData }) {
         </Section>
       </div>
 
-      <Section title="Merchant insights (top spend)">
-        <MerchantInsights data={data.merchants} currency={data.currency} />
+      <Section title="Merchant insights (search + drill-down)">
+        <MerchantInsights
+          data={data.merchants}
+          receipts={data.merchantReceipts}
+          currency={data.currency}
+        />
       </Section>
 
       {data.counts.skipped > 0 ? (
