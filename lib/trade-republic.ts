@@ -28,6 +28,9 @@ export type TradeRepublicReportRow = {
   type: string;
   description: string;
   category: string;
+  isin: string | null;
+  instrument: string | null;
+  quantity: number | null;
   fileName: string;
 };
 
@@ -54,6 +57,10 @@ export type TradeRepublicReportData = {
   categories: TradeRepublicCategoryPoint[];
   topOutflows: TradeRepublicTopMovement[];
   rows: TradeRepublicReportRow[];
+  portfolio: {
+    positions: TradeRepublicPosition[];
+    monthlyNet: TradeRepublicSeriesPoint[];
+  };
 };
 
 type TradeRepublicRow = {
@@ -63,6 +70,9 @@ type TradeRepublicRow = {
   type: string;
   description: string;
   category: string;
+  isin: string | null;
+  instrument: string | null;
+  quantity: number | null;
   fileName: string;
 };
 
@@ -180,6 +190,9 @@ type HeaderMapping = {
   currency?: string;
   type?: string;
   description?: string;
+  isin?: string;
+  instrument?: string;
+  quantity?: string;
 };
 
 function resolveHeaderMap(headers: string[], mapping?: HeaderMapping) {
@@ -216,6 +229,15 @@ function resolveHeaderMap(headers: string[], mapping?: HeaderMapping) {
     descriptionIndex:
       resolveMappedKey(mapping?.description) ??
       resolveKey(["description", "verwendungszweck", "details", "beschreibung", "name"]),
+    isinIndex:
+      resolveMappedKey(mapping?.isin) ??
+      resolveKey(["isin", "isin code", "security isin"]),
+    instrumentIndex:
+      resolveMappedKey(mapping?.instrument) ??
+      resolveKey(["instrument", "security", "asset", "name"]),
+    quantityIndex:
+      resolveMappedKey(mapping?.quantity) ??
+      resolveKey(["quantity", "qty", "shares", "units", "anzahl"]),
   };
 }
 
@@ -252,8 +274,16 @@ async function parseCsvFile(fileName: string) {
   const delimiter = pickDelimiter(lines[0]);
   const headers = splitCsvLine(lines[0], delimiter);
   const mapping = await readHeaderMapping();
-  const { dateIndex, amountIndex, currencyIndex, typeIndex, descriptionIndex } =
-    resolveHeaderMap(headers, mapping);
+  const {
+    dateIndex,
+    amountIndex,
+    currencyIndex,
+    typeIndex,
+    descriptionIndex,
+    isinIndex,
+    instrumentIndex,
+    quantityIndex,
+  } = resolveHeaderMap(headers, mapping);
 
   if (dateIndex === null || amountIndex === null) {
     return [] as TradeRepublicRow[];
@@ -270,6 +300,10 @@ async function parseCsvFile(fileName: string) {
     const currency = normalizeCurrency(currencyIndex !== null ? columns[currencyIndex] : "EUR");
     const type = typeIndex !== null ? (columns[typeIndex] || "Unknown") : "Unknown";
     const description = descriptionIndex !== null ? (columns[descriptionIndex] || "") : "";
+    const category = mapTradeRepublicCategory(type, description);
+    const isin = isinIndex !== null ? (columns[isinIndex] || "").trim() : "";
+    const instrument = instrumentIndex !== null ? (columns[instrumentIndex] || "").trim() : "";
+    const quantity = quantityIndex !== null ? parseAmount(columns[quantityIndex]) : null;
 
     rows.push({
       date,
@@ -277,6 +311,10 @@ async function parseCsvFile(fileName: string) {
       currency,
       type,
       description,
+      category,
+      isin: isin || null,
+      instrument: instrument || null,
+      quantity: quantity ?? null,
       fileName,
     });
   }
@@ -342,6 +380,59 @@ function buildSeries(rows: TradeRepublicRow[], range: Array<{ key: string; label
   }));
 }
 
+function buildTradingPositions(rows: TradeRepublicRow[]): TradeRepublicPosition[] {
+  const positions = new Map<string, TradeRepublicPosition>();
+
+  rows.forEach((row) => {
+    if (row.category !== "Buy" && row.category !== "Sell") return;
+    const key = row.isin ?? row.instrument ?? "Unknown";
+    const existing = positions.get(key) ?? {
+      isin: row.isin,
+      instrument: row.instrument,
+      buy: 0,
+      sell: 0,
+      net: 0,
+      trades: 0,
+      lastTrade: formatDateKey(row.date),
+    };
+
+    if (row.amount < 0) {
+      existing.buy += Math.abs(row.amount);
+    } else {
+      existing.sell += row.amount;
+    }
+
+    existing.net = existing.sell - existing.buy;
+    existing.trades += 1;
+
+    const rowDate = formatDateKey(row.date);
+    if (rowDate > existing.lastTrade) {
+      existing.lastTrade = rowDate;
+    }
+
+    positions.set(key, existing);
+  });
+
+  return [...positions.values()].sort((a, b) => b.buy - a.buy);
+}
+
+function buildTradingMonthlyNet(
+  rows: TradeRepublicRow[],
+  range: Array<{ key: string; label: string }>
+): TradeRepublicSeriesPoint[] {
+  const totals = new Map<string, number>();
+  rows.forEach((row) => {
+    if (row.category !== "Buy" && row.category !== "Sell") return;
+    const key = formatMonthKey(row.date);
+    totals.set(key, (totals.get(key) ?? 0) + row.amount);
+  });
+
+  return range.map(({ key, label }) => ({
+    label,
+    total: totals.get(key) ?? 0,
+  }));
+}
+
 export async function getTradeRepublicReportData(): Promise<TradeRepublicReportData> {
   const files = await listTradeRepublicFiles();
   const allRows: TradeRepublicRow[] = [];
@@ -393,6 +484,10 @@ export async function getTradeRepublicReportData(): Promise<TradeRepublicReportD
   const daily = buildSeries(filtered, dailyRange, (row) => formatDateKey(row.date));
   const weekly = buildSeries(filtered, weeklyRange, (row) => formatDateKey(startOfWeek(row.date)));
   const monthly = buildSeries(filtered, monthlyRange, (row) => formatMonthKey(row.date));
+  const tradingMonthlyNet = buildTradingMonthlyNet(filtered, monthlyRange);
+  const tradingPositions = buildTradingPositions(filtered);
+  const tradingMonthlyNet = buildTradingMonthlyNet(filtered, monthlyRange);
+  const tradingPositions = buildTradingPositions(filtered);
 
   const rangeStart = filtered.length
     ? formatDateKey(new Date(Math.min(...filtered.map((item) => item.date.getTime()))))
@@ -426,8 +521,15 @@ export async function getTradeRepublicReportData(): Promise<TradeRepublicReportD
       skipped,
     },
     range: {
+        isin: row.isin,
+        instrument: row.instrument,
+        quantity: row.quantity,
       start: rangeStart,
       end: rangeEnd,
+      portfolio: {
+        positions: tradingPositions,
+        monthlyNet: tradingMonthlyNet,
+      },
     },
     series: {
       daily,
@@ -443,7 +545,14 @@ export async function getTradeRepublicReportData(): Promise<TradeRepublicReportD
       type: row.type,
       description: row.description,
       category: row.category,
+      isin: row.isin,
+      instrument: row.instrument,
+      quantity: row.quantity,
       fileName: row.fileName,
     })),
+    portfolio: {
+      positions: tradingPositions,
+      monthlyNet: tradingMonthlyNet,
+    },
   };
 }

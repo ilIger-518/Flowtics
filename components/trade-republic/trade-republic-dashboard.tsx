@@ -19,7 +19,9 @@ import {
 } from "recharts";
 import type {
   TradeRepublicCategoryPoint,
+  TradeRepublicPosition,
   TradeRepublicReportData,
+  TradeRepublicReportRow,
   TradeRepublicSeriesPoint,
 } from "@/lib/trade-republic";
 
@@ -213,6 +215,52 @@ function CategoryChart({ data, currency }: { data: TradeRepublicCategoryPoint[];
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function PortfolioChart({ data, currency }: { data: TradeRepublicSeriesPoint[]; currency: string }) {
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <LineChart data={data}>
+        <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+        <YAxis tickFormatter={(value) => formatCompact(value, currency)} />
+        <Tooltip formatter={(value: number) => formatCurrency(value, currency)} />
+        <Line type="monotone" dataKey="total" stroke="#9467bd" strokeWidth={2} />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+function PortfolioTable({ data, currency }: { data: TradeRepublicPosition[]; currency: string }) {
+  if (data.length === 0) {
+    return <p className="text-sm text-muted-foreground">No trading positions detected.</p>;
+  }
+
+  return (
+    <div className="space-y-2 text-sm">
+      <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr] gap-2 text-xs uppercase text-muted-foreground">
+        <span>Instrument</span>
+        <span className="text-right">Buy</span>
+        <span className="text-right">Sell</span>
+        <span className="text-right">Net</span>
+        <span className="text-right">Last trade</span>
+      </div>
+      {data.slice(0, 10).map((position) => (
+        <div
+          key={`${position.isin ?? position.instrument ?? "unknown"}-${position.lastTrade}`}
+          className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr] gap-2"
+        >
+          <span className="truncate">
+            {position.instrument ?? "Unknown"}
+            {position.isin ? ` (${position.isin})` : ""}
+          </span>
+          <span className="text-right">{formatCurrency(position.buy, currency)}</span>
+          <span className="text-right">{formatCurrency(position.sell, currency)}</span>
+          <span className="text-right font-medium">{formatCurrency(position.net, currency)}</span>
+          <span className="text-right text-muted-foreground">{position.lastTrade}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -439,6 +487,13 @@ export default function TradeRepublicDashboard({ data }: { data: TradeRepublicRe
           <CategoryChart data={categoriesData} currency={data.currency} />
         </Section>
       </div>
+
+      <Section title="Portfolio snapshots (net trading cashflow)">
+        <div className="grid gap-6 xl:grid-cols-2">
+          <PortfolioChart data={data.portfolio.monthlyNet} currency={data.currency} />
+          <PortfolioTable data={data.portfolio.positions} currency={data.currency} />
+        </div>
+      </Section>
 
       <Section title="Largest outflows">
         {topOutflows.length === 0 ? (

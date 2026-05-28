@@ -23,6 +23,9 @@ export default function TradeRepublicPage() {
     currency: "",
     type: "",
     description: "",
+    isin: "",
+    instrument: "",
+    quantity: "",
   });
 
   const loadFiles = async () => {
@@ -47,7 +50,16 @@ export default function TradeRepublicPage() {
       if (!response.ok) return;
       const data = (await response.json()) as {
         headers?: string[];
-        mapping?: { date?: string; amount?: string; currency?: string; type?: string; description?: string };
+        mapping?: {
+          date?: string;
+          amount?: string;
+          currency?: string;
+          type?: string;
+          description?: string;
+          isin?: string;
+          instrument?: string;
+          quantity?: string;
+        };
       };
       setMappingHeaders(data.headers ?? []);
       setMapping({
@@ -56,6 +68,9 @@ export default function TradeRepublicPage() {
         currency: data.mapping?.currency ?? "",
         type: data.mapping?.type ?? "",
         description: data.mapping?.description ?? "",
+        isin: data.mapping?.isin ?? "",
+        instrument: data.mapping?.instrument ?? "",
+        quantity: data.mapping?.quantity ?? "",
       });
     } catch {
       setMappingHeaders([]);
@@ -185,13 +200,16 @@ export default function TradeRepublicPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             If CSV headers do not match automatically, map them here so analytics can parse the file.
           </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {([
               { key: "date", label: "Date" },
               { key: "amount", label: "Amount" },
               { key: "currency", label: "Currency" },
               { key: "type", label: "Type" },
               { key: "description", label: "Description" },
+              { key: "isin", label: "ISIN" },
+              { key: "instrument", label: "Instrument" },
+              { key: "quantity", label: "Quantity" },
             ] as const).map((field) => (
               <label key={field.key} className="text-sm">
                 <span className="text-xs text-muted-foreground">{field.label}</span>

@@ -11,6 +11,9 @@ type MappingPayload = {
   currency?: string;
   type?: string;
   description?: string;
+  isin?: string;
+  instrument?: string;
+  quantity?: string;
 };
 
 const tradeRepublicDir = resolveTradeRepublicDir();

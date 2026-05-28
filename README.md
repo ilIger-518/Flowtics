@@ -72,7 +72,7 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 9) The receipts outputs page lists OCR and structured JSON outputs for each upload.
 10) The receipt repair view shows the original image and lets users edit structured fields.
 10) Trade Republic CSV exports are uploaded to a separate storage folder and are not merged into receipts.
-11) The Trade Republic reports page parses CSV exports (trading + card transactions) into separate analytics with Card-only and Trading-only presets, plus URL-persisted filters.
+11) The Trade Republic reports page parses CSV exports (trading + card transactions) into separate analytics with Card-only and Trading-only presets, URL-persisted filters, and portfolio snapshots by ISIN/instrument.
 13) The reports page aggregates structured receipts into day/week/month charts, category totals, and merchant insights with search and drill-down.
 14) A left SideNav provides navigation between "Dashboard", "Reports", "Trade Republic", "Drop files", "Uploads", and receipt views.
 
@@ -145,7 +145,7 @@ curl -O http://localhost:3000/uploads/2026-05-20:10-22-31-004_2f7d1b3d-2a9f-4b9f
 - Response: JSON header list and stored mapping.
 
 ### `POST /api/trade-republic/mapping`
-- Request: JSON with header mapping fields.
+- Request: JSON with header mapping fields (including optional ISIN/instrument/quantity).
 - Response: `{ "ok": true }` with the stored mapping.
 
 ### `GET /uploads/trade-republic/[file]`
@@ -261,6 +261,7 @@ Migrations live under `prisma/migrations/`.
 - Trade Republic CSV exports are stored separately and are not included in receipt analytics.
 - Trade Republic analytics rely on CSV headers; files missing date or amount headers are skipped.
 - Header mappings are stored in `uploads/trade-republic/mapping.json`.
+- Portfolio snapshots rely on ISIN or instrument columns when available.
 - Trade Republic category breakdowns map CSV types into Buy/Sell/Dividend/Fees/Card using keyword matching.
 - Receipt saved views are stored in `uploads/saved-views/receipts.json`.
 
