@@ -27,9 +27,11 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 	- `page.tsx`: Dashboard home page (server component) with pipeline metrics.
 	- `drop/page.tsx`: Drag-and-drop upload page.
 	- `reports/page.tsx`: Reports dashboard with analytics and charts.
+	- `receipts/page.tsx`: Receipt library with filters and saved views.
 	- `trade-republic/page.tsx`: Trade Republic CSV import page.
 	- `trade-republic/reports/page.tsx`: Trade Republic analytics dashboard.
 	- `api/upload/route.ts`: Accepts `multipart/form-data` uploads and writes files to `uploads/`.
+	- `api/receipts/views/route.ts`: Stores and retrieves saved receipt filter views.
 	- `api/trade-republic/route.ts`: Stores Trade Republic CSV exports under `uploads/trade-republic/`.
 	- `uploads/trade-republic/[file]/route.ts`: Streams Trade Republic CSV downloads.
 	- `uploads/page.tsx`: Lists uploaded files with download links.
@@ -43,9 +45,11 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 	- `generated/prisma/`: Prisma Client output.
 - `components/nav/side-nav.tsx`: Collapsible SideNav UI.
 - `components/receipts/receipt-editor.tsx`: Receipt repair form UI.
+- `components/receipts/receipt-library.tsx`: Receipt filtering UI and saved views.
 - `components/reports/reports-dashboard.tsx`: Client-side charts and report widgets.
 - `config/site.ts`: Navigation config for the SideNav.
 - `lib/reports.ts`: Report aggregation, date parsing, and category heuristics.
+- `lib/receipts.ts`: Receipt summary loading and category heuristics for filtering.
 - `lib/utils.ts`: Utility helpers (class name merging).
 - `prisma/`
 	- `schema.prisma`: Database schema and generator config.
@@ -63,12 +67,13 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 5) The API route writes files to `uploads/` using `yyyy-mm-dd:hh-mm-ss-ms_UUID.<ext>`, sends the image to Google Cloud Vision (document text detection), and stores OCR text in `uploads/receipts/ocr_<timestamp>_<uuid>.json`.
 6) The OCR text is sent to a local Ollama model (`qwen2.5:1.5b`) to produce structured JSON saved under `uploads/receipts/structured/structured_<timestamp>_<uuid>.json` with merchant, address, date, time, currency, total, and item lines.
 7) The uploads page lists current files and links to `/uploads/[file]` for download.
-8) The receipts page lists OCR and structured JSON outputs for each upload, with links to a repair view.
-9) The receipt repair view shows the original image and lets users edit structured fields.
+8) The receipt library page filters structured receipts and saves views.
+9) The receipts outputs page lists OCR and structured JSON outputs for each upload.
+10) The receipt repair view shows the original image and lets users edit structured fields.
 10) Trade Republic CSV exports are uploaded to a separate storage folder and are not merged into receipts.
 11) The Trade Republic reports page parses CSV exports (trading + card transactions) into separate analytics with Card-only and Trading-only presets, plus URL-persisted filters.
-12) The reports page aggregates structured receipts into day/week/month charts, category totals, and merchant insights with search and drill-down.
-13) A left SideNav provides navigation between "Dashboard", "Reports", "Trade Republic", "Drop files", "Uploads", and "Receipts".
+13) The reports page aggregates structured receipts into day/week/month charts, category totals, and merchant insights with search and drill-down.
+14) A left SideNav provides navigation between "Dashboard", "Reports", "Trade Republic", "Drop files", "Uploads", and receipt views.
 
 ## API Endpoints
 ### `POST /api/upload`
@@ -116,6 +121,16 @@ curl -O http://localhost:3000/uploads/2026-05-20:10-22-31-004_2f7d1b3d-2a9f-4b9f
 
 ### `PUT /uploads/receipts/structured/[file]`
 - Request: JSON body with repaired fields.
+- Response: `{ "ok": true }` on success.
+
+### `GET /api/receipts/views`
+- Response: JSON list of saved views for receipts (filter presets).
+
+### `POST /api/receipts/views`
+- Request: JSON body with `name`, `scope`, and `filters`.
+- Response: JSON payload with saved view metadata.
+
+### `DELETE /api/receipts/views?id=...`
 - Response: `{ "ok": true }` on success.
 
 ### `POST /api/trade-republic`
@@ -238,6 +253,7 @@ Migrations live under `prisma/migrations/`.
 - Trade Republic CSV exports are stored separately and are not included in receipt analytics.
 - Trade Republic analytics rely on CSV headers; files missing date or amount headers are skipped.
 - Trade Republic category breakdowns map CSV types into Buy/Sell/Dividend/Fees/Card using keyword matching.
+- Receipt saved views are stored in `uploads/saved-views/receipts.json`.
 
 ## Troubleshooting Notes
 - If VS Code still reports TS2882 for `./globals.css`, ensure [global.d.ts](global.d.ts) declares `*.css` modules, `allowArbitraryExtensions` is enabled in `tsconfig.json`, and restart the TypeScript server.

@@ -14,5 +14,6 @@ export const navigations: Navigation[] = [
   { name: "Trade Republic", href: "/trade-republic" },
   { name: "Drop files", href: "/drop" },
   { name: "Uploads", href: "/uploads" },
-  { name: "Receipts", href: "/uploads/receipts" },
+  { name: "Receipt library", href: "/receipts" },
+  { name: "Receipt outputs", href: "/uploads/receipts" },
 ];

@@ -70,6 +70,15 @@ export default async function Page() {
             </p>
           </Link>
           <Link
+            href="/receipts"
+            className="rounded-lg border border-border bg-card p-4 transition hover:border-primary"
+          >
+            <h2 className="text-lg font-medium">Receipt library</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Filter receipts by date, amount, and category.
+            </p>
+          </Link>
+          <Link
             href="/uploads"
             className="rounded-lg border border-border bg-card p-4 transition hover:border-primary"
           >
