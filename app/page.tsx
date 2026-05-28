@@ -85,37 +85,73 @@ export default async function Page() {
             href="/reports"
             className="rounded-lg border border-border bg-card p-4 transition hover:border-primary"
           >
-            <h2 className="text-lg font-medium">Reports</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Track spend by day, week, month, and category.
-            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-medium">Reports</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Track spend by day, week, month, and category.
+                </p>
+              </div>
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+                  <path d="M4 4h12v12H4V4zm2 2v2h8V6H6zm0 4v4h8v-4H6z" fill="currentColor" />
+                </svg>
+              </span>
+            </div>
           </Link>
           <Link
             href="/receipts"
             className="rounded-lg border border-border bg-card p-4 transition hover:border-primary"
           >
-            <h2 className="text-lg font-medium">Receipt library</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Filter receipts by date, amount, and category.
-            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-medium">Receipt library</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Filter receipts by date, amount, and category.
+                </p>
+              </div>
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+                  <path d="M5 3h10l-1 14-2-1-2 1-2-1-2 1-1-14zm2 4h6v2H7V7zm0 4h6v2H7v-2z" fill="currentColor" />
+                </svg>
+              </span>
+            </div>
           </Link>
           <Link
             href="/uploads"
             className="rounded-lg border border-border bg-card p-4 transition hover:border-primary"
           >
-            <h2 className="text-lg font-medium">Browse uploads</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Download original images and files.
-            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-medium">Browse uploads</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Download original images and files.
+                </p>
+              </div>
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+                  <path d="M3 5h6l2 2h6v8H3V5zm2 3v5h10V8H5z" fill="currentColor" />
+                </svg>
+              </span>
+            </div>
           </Link>
           <Link
             href="/uploads/receipts"
             className="rounded-lg border border-border bg-card p-4 transition hover:border-primary"
           >
-            <h2 className="text-lg font-medium">Receipt outputs</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              View OCR and structured JSON exports.
-            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-medium">Receipt outputs</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  View OCR and structured JSON exports.
+                </p>
+              </div>
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+                  <path d="M6 3h6l4 4v10H6V3zm6 1.5V8h3.5L12 4.5zM8 11h6v2H8v-2z" fill="currentColor" />
+                </svg>
+              </span>
+            </div>
           </Link>
         </div>
       </div>
