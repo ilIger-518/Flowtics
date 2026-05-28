@@ -71,12 +71,20 @@ export default function TradeRepublicPage() {
   return (
     <div className="min-h-screen p-8">
       <div className="mx-auto w-full max-w-4xl space-y-6">
-        <div>
-          <h1 className="text-3xl font-semibold">Trade Republic Imports</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Upload Trade Republic CSV exports. These files are stored separately
-            and are not included in receipt analytics to avoid double counting.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold">Trade Republic Imports</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Upload Trade Republic CSV exports. These files are stored separately
+              and are not included in receipt analytics to avoid double counting.
+            </p>
+          </div>
+          <a
+            className="rounded border border-border px-3 py-1 text-sm"
+            href="/trade-republic/reports"
+          >
+            View analytics
+          </a>
         </div>
 
         <section className="rounded-lg border border-border bg-card p-4">
