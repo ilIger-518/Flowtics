@@ -247,11 +247,36 @@ function PortfolioTable({ data, currency }: { data: TradeRepublicPosition[]; cur
   return (
     <div className="space-y-2 text-sm">
       <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr] gap-2 text-xs uppercase text-muted-foreground">
-        <span>Instrument</span>
-        <span className="text-right">Buy</span>
-        <span className="text-right">Sell</span>
-        <span className="text-right">Net</span>
-        <span className="text-right">Last trade</span>
+        <span className="flex items-center gap-1">
+          <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+            <path d="M4 5h12v10H4V5zm2 2v6h8V7H6z" fill="currentColor" />
+          </svg>
+          Instrument
+        </span>
+        <span className="flex items-center justify-end gap-1">
+          <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+            <path d="M10 3l4 4h-3v6H9V7H6l4-4z" fill="currentColor" />
+          </svg>
+          Buy
+        </span>
+        <span className="flex items-center justify-end gap-1">
+          <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+            <path d="M10 17l-4-4h3V7h2v6h3l-4 4z" fill="currentColor" />
+          </svg>
+          Sell
+        </span>
+        <span className="flex items-center justify-end gap-1">
+          <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+            <path d="M4 10h12v2H4v-2z" fill="currentColor" />
+          </svg>
+          Net
+        </span>
+        <span className="flex items-center justify-end gap-1">
+          <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+            <path d="M6 2v2m8-2v2M3 7h14v9H3V7z" fill="currentColor" />
+          </svg>
+          Last trade
+        </span>
       </div>
       {data.slice(0, 10).map((position) => (
         <div

@@ -172,15 +172,25 @@ export default function ReceiptLibrary({ data }: { data: ReceiptSummary[] }) {
     <div className="space-y-6">
       <section className="rounded-lg border border-border bg-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-medium">Filters</h2>
+          <h2 className="flex items-center gap-2 text-lg font-medium">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+                <path d="M4 6h12v2H4V6zm2 4h8v2H6v-2zm3 4h2v2H9v-2z" fill="currentColor" />
+              </svg>
+            </span>
+            Filters
+          </h2>
           <button
             type="button"
-            className="text-xs text-blue-600 underline"
+            className="inline-flex items-center gap-1 text-xs text-blue-600 underline"
             onClick={() => {
               setFilters(defaultFilters);
               setSelectedView("");
             }}
           >
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+              <path d="M6 6h8v2H6V6zm0 4h6v2H6v-2zm-2 5h12v2H4v-2z" fill="currentColor" />
+            </svg>
             Reset filters
           </button>
         </div>

@@ -219,11 +219,36 @@ function MerchantInsights({
           />
         </div>
         <div className="grid grid-cols-[1.6fr_1fr_1fr_0.8fr_1fr] gap-2 text-xs uppercase text-muted-foreground">
-          <span>Merchant</span>
-          <span className="text-right">Total</span>
-          <span className="text-right">Avg</span>
-          <span className="text-right">Receipts</span>
-          <span className="text-right">Last seen</span>
+          <span className="flex items-center gap-1">
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+              <path d="M4 6h12v2H4V6zm2 4h8v2H6v-2zm3 4h2v2H9v-2z" fill="currentColor" />
+            </svg>
+            Merchant
+          </span>
+          <span className="flex items-center justify-end gap-1">
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+              <path d="M4 10h12v2H4v-2z" fill="currentColor" />
+            </svg>
+            Total
+          </span>
+          <span className="flex items-center justify-end gap-1">
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+              <path d="M5 6h10v2H5V6zm0 6h10v2H5v-2z" fill="currentColor" />
+            </svg>
+            Avg
+          </span>
+          <span className="flex items-center justify-end gap-1">
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+              <path d="M4 5h12v2H4V5zm0 4h12v2H4V9zm0 4h12v2H4v-2z" fill="currentColor" />
+            </svg>
+            Receipts
+          </span>
+          <span className="flex items-center justify-end gap-1">
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+              <path d="M6 2v2m8-2v2M3 7h14v9H3V7z" fill="currentColor" />
+            </svg>
+            Last seen
+          </span>
         </div>
         <div className="space-y-2">
           {top.length === 0 ? (
