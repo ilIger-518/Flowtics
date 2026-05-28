@@ -1,0 +1,705 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import type {
+  TradeRepublicCategoryPoint,
+  TradeRepublicPosition,
+  TradeRepublicReportData,
+  TradeRepublicReportRow,
+  TradeRepublicSeriesPoint,
+} from "@/lib/trade-republic";
+
+const chartColors = [
+  "#1f77b4",
+  "#ff7f0e",
+  "#2ca02c",
+  "#d62728",
+  "#9467bd",
+  "#8c564b",
+  "#e377c2",
+  "#7f7f7f",
+  "#bcbd22",
+  "#17becf",
+];
+
+function formatCurrency(value: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return `${value.toFixed(2)} ${currency}`.trim();
+  }
+}
+
+function formatCompact(value: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      notation: "compact",
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return `${value.toFixed(2)} ${currency}`.trim();
+  }
+}
+
+function formatShortDate(value: string) {
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+}
+
+function formatDateKey(value: string) {
+  return value;
+}
+
+function startOfWeek(date: Date) {
+  const base = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const day = base.getUTCDay();
+  const diff = (day + 6) % 7;
+  base.setUTCDate(base.getUTCDate() - diff);
+  return base;
+}
+
+function formatMonthKey(date: Date) {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function buildSeries(
+  rows: TradeRepublicReportRow[],
+  range: Array<{ key: string; label: string }>,
+  keyFn: (row: TradeRepublicReportRow) => string
+) {
+  const totals = new Map<string, number>();
+  rows.forEach((row) => {
+    if (row.amount >= 0) return;
+    const key = keyFn(row);
+    totals.set(key, (totals.get(key) ?? 0) + Math.abs(row.amount));
+  });
+
+  return range.map(({ key, label }) => ({
+    label,
+    total: totals.get(key) ?? 0,
+  }));
+}
+
+function buildCategoryBreakdown(rows: TradeRepublicReportRow[]) {
+  const totals = new Map<string, number>();
+  rows.forEach((row) => {
+    if (row.amount >= 0) return;
+    totals.set(row.category, (totals.get(row.category) ?? 0) + Math.abs(row.amount));
+  });
+
+  return [...totals.entries()]
+    .map(([category, total]) => ({ category, total }))
+    .sort((a, b) => b.total - a.total);
+}
+
+function Card({ title, value, helper, icon }: { title: string; value: string; helper?: string; icon?: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-4">
+      <div className="flex items-center justify-between">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">{title}</p>
+        {icon ? (
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+            {icon}
+          </span>
+        ) : null}
+      </div>
+      <p className="mt-2 text-2xl font-semibold">{value}</p>
+      {helper ? <p className="mt-1 text-xs text-muted-foreground">{helper}</p> : null}
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-lg border border-border bg-card p-4">
+      <h2 className="text-lg font-medium">{title}</h2>
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="rounded-lg border border-dashed border-border bg-card p-10 text-center">
+      <h2 className="text-lg font-medium">No Trade Republic data yet</h2>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Upload CSV exports to populate the Trade Republic dashboard.
+      </p>
+    </div>
+  );
+}
+
+function SeriesChart({ data, currency, type }: { data: TradeRepublicSeriesPoint[]; currency: string; type: "daily" | "weekly" | "monthly" }) {
+  if (type === "daily") {
+    return (
+      <ResponsiveContainer width="100%" height={240}>
+        <LineChart data={data}>
+          <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+          <YAxis tickFormatter={(value) => formatCompact(value, currency)} />
+          <Tooltip formatter={(value: number) => formatCurrency(value, currency)} />
+          <Line type="monotone" dataKey="total" stroke="#1f77b4" strokeWidth={2} />
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  if (type === "weekly") {
+    return (
+      <ResponsiveContainer width="100%" height={240}>
+        <BarChart data={data}>
+          <XAxis dataKey="label" tick={{ fontSize: 12 }} hide={data.length > 6} />
+          <YAxis tickFormatter={(value) => formatCompact(value, currency)} />
+          <Tooltip formatter={(value: number) => formatCurrency(value, currency)} />
+          <Bar dataKey="total" fill="#2ca02c" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <AreaChart data={data}>
+        <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+        <YAxis tickFormatter={(value) => formatCompact(value, currency)} />
+        <Tooltip formatter={(value: number) => formatCurrency(value, currency)} />
+        <Area type="monotone" dataKey="total" stroke="#ff7f0e" fill="#ff7f0e" fillOpacity={0.25} />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+function CategoryChart({ data, currency }: { data: TradeRepublicCategoryPoint[]; currency: string }) {
+  return (
+    <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+      <div className="h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={data} dataKey="total" nameKey="category" innerRadius={50} outerRadius={90} paddingAngle={2}>
+              {data.map((entry, index) => (
+                <Cell key={entry.category} fill={chartColors[index % chartColors.length]} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value: number) => formatCurrency(value, currency)} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="space-y-2 text-sm">
+        {data.map((entry, index) => (
+          <div key={entry.category} className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: chartColors[index % chartColors.length] }}
+              />
+              <span>{entry.category}</span>
+            </div>
+            <span className="font-medium">{formatCurrency(entry.total, currency)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PortfolioChart({ data, currency }: { data: TradeRepublicSeriesPoint[]; currency: string }) {
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <LineChart data={data}>
+        <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+        <YAxis tickFormatter={(value) => formatCompact(value, currency)} />
+        <Tooltip formatter={(value: number) => formatCurrency(value, currency)} />
+        <Line type="monotone" dataKey="total" stroke="#9467bd" strokeWidth={2} />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+function PortfolioTable({ data, currency }: { data: TradeRepublicPosition[]; currency: string }) {
+  if (data.length === 0) {
+    return <p className="text-sm text-muted-foreground">No trading positions detected.</p>;
+  }
+
+  return (
+    <div className="space-y-2 text-sm">
+      <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr] gap-2 text-xs uppercase text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+            <path d="M4 5h12v10H4V5zm2 2v6h8V7H6z" fill="currentColor" />
+          </svg>
+          Instrument
+        </span>
+        <span className="flex items-center justify-end gap-1">
+          <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+            <path d="M10 3l4 4h-3v6H9V7H6l4-4z" fill="currentColor" />
+          </svg>
+          Buy
+        </span>
+        <span className="flex items-center justify-end gap-1">
+          <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+            <path d="M10 17l-4-4h3V7h2v6h3l-4 4z" fill="currentColor" />
+          </svg>
+          Sell
+        </span>
+        <span className="flex items-center justify-end gap-1">
+          <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+            <path d="M4 10h12v2H4v-2z" fill="currentColor" />
+          </svg>
+          Net
+        </span>
+        <span className="flex items-center justify-end gap-1">
+          <svg viewBox="0 0 20 20" aria-hidden="true" className="h-3.5 w-3.5">
+            <path d="M6 2v2m8-2v2M3 7h14v9H3V7z" fill="currentColor" />
+          </svg>
+          Last trade
+        </span>
+      </div>
+      {data.slice(0, 10).map((position) => (
+        <div
+          key={`${position.isin ?? position.instrument ?? "unknown"}-${position.lastTrade}`}
+          className="grid grid-cols-[1.6fr_1fr_1fr_1fr_1fr] gap-2"
+        >
+          <span className="truncate">
+            {position.instrument ?? "Unknown"}
+            {position.isin ? ` (${position.isin})` : ""}
+          </span>
+          <span className="text-right">{formatCurrency(position.buy, currency)}</span>
+          <span className="text-right">{formatCurrency(position.sell, currency)}</span>
+          <span className="text-right font-medium">{formatCurrency(position.net, currency)}</span>
+          <span className="text-right text-muted-foreground">{position.lastTrade}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function TradeRepublicDashboard({ data }: { data: TradeRepublicReportData }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [filters, setFilters] = useState<string[]>([]);
+  const [cardTags, setCardTags] = useState<Record<string, { merchant: string; category: string }>>({});
+  const [tagStatus, setTagStatus] = useState<string | null>(null);
+  const initialized = useRef(false);
+
+  const categories = ["Buy", "Sell", "Dividend", "Fees", "Card"];
+  const activeFilters = filters.length > 0 ? filters : categories;
+  const cardCategories = ["Food", "Transport", "Utilities", "Shopping", "Entertainment", "Travel", "Health", "Other"];
+
+  useEffect(() => {
+    const preset = searchParams.get("tr");
+    if (!preset) {
+      setFilters([]);
+      return;
+    }
+
+    if (preset === "card") {
+      setFilters(["Card"]);
+      return;
+    }
+
+    if (preset === "trading") {
+      setFilters(["Buy", "Sell", "Dividend", "Fees"]);
+      return;
+    }
+
+    if (preset.startsWith("custom:")) {
+      const raw = preset.replace("custom:", "");
+      const list = raw
+        .split(",")
+        .map((value) => value.trim())
+        .filter((value) => categories.includes(value));
+      setFilters(list);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const nextTags: Record<string, { merchant: string; category: string }> = {};
+    data.rows
+      .filter((row) => row.category === "Card")
+      .forEach((row) => {
+        nextTags[row.cardTagKey] = {
+          merchant: row.cardMerchant ?? "",
+          category: row.cardCategory ?? "",
+        };
+      });
+    setCardTags(nextTags);
+  }, [data.rows]);
+
+  useEffect(() => {
+    if (!initialized.current) {
+      initialized.current = true;
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (filters.length === 0) {
+      params.delete("tr");
+    } else if (filters.length === 1 && filters[0] === "Card") {
+      params.set("tr", "card");
+    } else if (
+      filters.length === 4 &&
+      ["Buy", "Sell", "Dividend", "Fees"].every((value) => filters.includes(value))
+    ) {
+      params.set("tr", "trading");
+    } else {
+      const sorted = [...filters].sort();
+      params.set("tr", `custom:${sorted.join(",")}`);
+    }
+
+    const query = params.toString();
+    const nextUrl = query ? `?${query}` : window.location.pathname;
+    router.replace(nextUrl);
+  }, [filters, router, searchParams]);
+
+  const filteredRows = useMemo(() => {
+    if (data.rows.length === 0) return [];
+    return data.rows.filter((row) => activeFilters.includes(row.category));
+  }, [data.rows, activeFilters]);
+
+  const cardRows = useMemo(() => data.rows.filter((row) => row.category === "Card"), [data.rows]);
+  const tradingRows = useMemo(
+    () => data.rows.filter((row) => ["Buy", "Sell", "Dividend", "Fees"].includes(row.category)),
+    [data.rows]
+  );
+
+  const cardOutflow = useMemo(
+    () => cardRows.filter((row) => row.amount < 0).reduce((acc, row) => acc + Math.abs(row.amount), 0),
+    [cardRows]
+  );
+  const tradingOutflow = useMemo(
+    () => tradingRows.filter((row) => row.amount < 0).reduce((acc, row) => acc + Math.abs(row.amount), 0),
+    [tradingRows]
+  );
+
+  const handleSaveTag = async (key: string) => {
+    const tag = cardTags[key];
+    if (!tag?.merchant || !tag?.category) {
+      setTagStatus("Merchant and category are required.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/trade-republic/card-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, merchant: tag.merchant, category: tag.category }),
+      });
+      if (!response.ok) {
+        setTagStatus("Failed to save card tag.");
+        return;
+      }
+      setTagStatus("Card tag saved.");
+    } catch {
+      setTagStatus("Failed to save card tag.");
+    }
+  };
+
+  const cashRows = useMemo(
+    () => data.rows.filter((row) => (row.sourceCategory ?? "").toLowerCase() === "cash"),
+    [data.rows]
+  );
+  const inflow = cashRows.filter((row) => row.amount > 0).reduce((acc, row) => acc + row.amount, 0);
+  const outflow = cashRows
+    .filter((row) => row.amount < 0)
+    .reduce((acc, row) => acc + Math.abs(row.amount), 0);
+
+  const today = new Date();
+  const weekStart = startOfWeek(today);
+
+  const dailyRange: Array<{ key: string; label: string }> = [];
+  for (let i = 13; i >= 0; i -= 1) {
+    const date = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+    date.setUTCDate(date.getUTCDate() - i);
+    const key = formatDateKey(date.toISOString().slice(0, 10));
+    dailyRange.push({ key, label: formatShortDate(key) });
+  }
+
+  const weeklyRange: Array<{ key: string; label: string }> = [];
+  for (let i = 7; i >= 0; i -= 1) {
+    const date = new Date(weekStart);
+    date.setUTCDate(date.getUTCDate() - i * 7);
+    const key = formatDateKey(date.toISOString().slice(0, 10));
+    weeklyRange.push({ key, label: `Week of ${formatShortDate(key)}` });
+  }
+
+  const monthlyRange: Array<{ key: string; label: string }> = [];
+  for (let i = 5; i >= 0; i -= 1) {
+    const date = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+    date.setUTCMonth(date.getUTCMonth() - i);
+    const key = formatMonthKey(date);
+    const label = date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    monthlyRange.push({ key, label });
+  }
+
+  const daily = buildSeries(filteredRows, dailyRange, (row) => row.date);
+  const weekly = buildSeries(filteredRows, weeklyRange, (row) => {
+    const date = new Date(`${row.date}T00:00:00Z`);
+    return formatDateKey(startOfWeek(date).toISOString().slice(0, 10));
+  });
+  const monthly = buildSeries(filteredRows, monthlyRange, (row) => {
+    const date = new Date(`${row.date}T00:00:00Z`);
+    return formatMonthKey(date);
+  });
+
+  const categoriesData = buildCategoryBreakdown(filteredRows);
+  const topOutflows = filteredRows
+    .filter((row) => row.amount < 0)
+    .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
+    .slice(0, 8);
+
+  if (data.counts.rows === 0) {
+    return <EmptyState />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card
+          title="Cash inflow"
+          value={formatCurrency(inflow, data.currency)}
+          icon={
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+              <path d="M10 3l4 4h-3v6H9V7H6l4-4zM4 15h12v2H4v-2z" fill="currentColor" />
+            </svg>
+          }
+        />
+        <Card
+          title="Cash outflow"
+          value={formatCurrency(outflow, data.currency)}
+          icon={
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+              <path d="M10 17l-4-4h3V7h2v6h3l-4 4zM4 3h12v2H4V3z" fill="currentColor" />
+            </svg>
+          }
+        />
+        <Card
+          title="Cash net"
+          value={formatCurrency(inflow - outflow, data.currency)}
+          helper="Change over export period"
+          icon={
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+              <path d="M4 10h12v2H4v-2zm1-5h10v2H5V5zm0 8h10v2H5v-2z" fill="currentColor" />
+            </svg>
+          }
+        />
+        <Card
+          title="Rows"
+          value={`${filteredRows.length}`}
+          helper={`Range ${data.range.start ?? "-"} to ${data.range.end ?? "-"}`}
+          icon={
+            <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+              <path d="M4 4h12v2H4V4zm0 5h12v2H4V9zm0 5h12v2H4v-2z" fill="currentColor" />
+            </svg>
+          }
+        />
+      </div>
+
+      <div className="rounded-lg border border-border bg-card p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setFilters(["Card"])}
+            className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition hover:border-primary"
+          >
+            Card only
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilters(["Buy", "Sell", "Dividend", "Fees"])}
+            className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition hover:border-primary"
+          >
+            Trading only
+          </button>
+          <div className="ml-auto flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span className="rounded-full border border-border px-3 py-1">
+              Card outflow: {formatCurrency(cardOutflow, data.currency)}
+            </span>
+            <span className="rounded-full border border-border px-3 py-1">
+              Trading outflow: {formatCurrency(tradingOutflow, data.currency)}
+            </span>
+          </div>
+          {categories.map((category) => {
+            const active = activeFilters.includes(category);
+            return (
+              <button
+                key={category}
+                type="button"
+                onClick={() => {
+                  setFilters((prev) =>
+                    prev.includes(category)
+                      ? prev.filter((item) => item !== category)
+                      : [...prev, category]
+                  );
+                }}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                  active
+                    ? "border-primary bg-primary text-white"
+                    : "border-border text-muted-foreground hover:border-primary"
+                }`}
+              >
+                {category}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => setFilters([])}
+            className="text-xs text-blue-600 underline"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Section title="Daily outflow (last 14 days)">
+          <SeriesChart data={daily} currency={data.currency} type="daily" />
+        </Section>
+        <Section title="Weekly outflow (last 8 weeks)">
+          <SeriesChart data={weekly} currency={data.currency} type="weekly" />
+        </Section>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Section title="Monthly outflow (last 6 months)">
+          <SeriesChart data={monthly} currency={data.currency} type="monthly" />
+        </Section>
+        <Section title="Outflow by type">
+          <CategoryChart data={categoriesData} currency={data.currency} />
+        </Section>
+      </div>
+
+      <Section title="Portfolio snapshots (net trading cashflow)">
+        <div className="grid gap-6 xl:grid-cols-2">
+          <PortfolioChart data={data.portfolio.monthlyNet} currency={data.currency} />
+          <PortfolioTable data={data.portfolio.positions} currency={data.currency} />
+        </div>
+      </Section>
+
+      <Section title="Card transaction tagging">
+        {cardRows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No card transactions found.</p>
+        ) : (
+          <div className="space-y-3">
+            {cardRows.slice(0, 20).map((row) => {
+              const tag = cardTags[row.cardTagKey] ?? { merchant: "", category: "" };
+              return (
+                <div
+                  key={row.cardTagKey}
+                  className="grid gap-3 rounded-md border border-border p-3 text-sm md:grid-cols-[1.5fr_1fr_1fr_0.7fr]"
+                >
+                  <div>
+                    <p className="font-medium">{formatCurrency(Math.abs(row.amount), row.currency)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatShortDate(row.date)} · {row.description || row.type}
+                    </p>
+                  </div>
+                  <input
+                    className="w-full rounded border border-border bg-background px-2 py-1 text-sm"
+                    placeholder="Merchant"
+                    value={tag.merchant}
+                    onChange={(event) =>
+                      setCardTags((prev) => ({
+                        ...prev,
+                        [row.cardTagKey]: {
+                          merchant: event.target.value,
+                          category: tag.category,
+                        },
+                      }))
+                    }
+                  />
+                  <select
+                    className="w-full rounded border border-border bg-background px-2 py-1 text-sm"
+                    value={tag.category}
+                    onChange={(event) =>
+                      setCardTags((prev) => ({
+                        ...prev,
+                        [row.cardTagKey]: {
+                          merchant: tag.merchant,
+                          category: event.target.value,
+                        },
+                      }))
+                    }
+                  >
+                    <option value="">Select category</option>
+                    {cardCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveTag(row.cardTagKey)}
+                    className="rounded bg-primary px-3 py-1 text-sm text-white"
+                  >
+                    Save
+                  </button>
+                </div>
+              );
+            })}
+            {tagStatus ? <p className="text-xs text-muted-foreground">{tagStatus}</p> : null}
+            {cardRows.length > 20 ? (
+              <p className="text-xs text-muted-foreground">
+                Showing first 20 card transactions. Use filters to narrow the list.
+              </p>
+            ) : null}
+          </div>
+        )}
+      </Section>
+
+      <Section title="Largest outflows">
+        {topOutflows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No outflow data yet.</p>
+        ) : (
+          <div className="space-y-2 text-sm">
+            {topOutflows.map((entry) => (
+              <div
+                key={`${entry.fileName}-${entry.date}-${entry.amount}`}
+                className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
+              >
+                <div>
+                  <p className="font-medium">{formatCurrency(Math.abs(entry.amount), data.currency)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatShortDate(entry.date)} · {entry.category} · {entry.description}
+                  </p>
+                </div>
+                <span className="text-xs text-muted-foreground">{entry.fileName}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      {data.counts.skipped > 0 ? (
+        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-900">
+          {data.counts.skipped} CSV file(s) skipped due to missing headers.
+        </div>
+      ) : null}
+    </div>
+  );
+}

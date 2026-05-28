@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
-import { resolveUploadsDir } from "@/lib/paths";
+import { resolveStructuredDir } from "@/lib/paths";
 
 export const runtime = "nodejs";
 
-const uploadsDir = resolveUploadsDir();
+const structuredDir = resolveStructuredDir();
 
 function toSafeName(name: string) {
   return path.basename(name);
@@ -23,7 +23,7 @@ export async function GET(
     return NextResponse.json({ error: "Invalid file name." }, { status: 400 });
   }
 
-  const filePath = path.join(uploadsDir, safeName);
+  const filePath = path.join(structuredDir, safeName);
 
   try {
     const stat = await fs.stat(filePath);
@@ -34,7 +34,7 @@ export async function GET(
     const data = await fs.readFile(filePath);
     return new NextResponse(data, {
       headers: {
-        "Content-Type": "application/octet-stream",
+        "Content-Type": "application/json",
         "Content-Disposition": `attachment; filename="${safeName}"`,
       },
     });
@@ -46,5 +46,31 @@ export async function GET(
       return NextResponse.json({ error: "Not a file." }, { status: 400 });
     }
     throw err;
+  }
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ file: string }> }
+) {
+  const { file } = await params;
+  const decoded = decodeURIComponent(file);
+  const safeName = toSafeName(decoded);
+
+  if (!safeName || safeName !== decoded) {
+    return NextResponse.json({ error: "Invalid file name." }, { status: 400 });
+  }
+
+  const filePath = path.join(structuredDir, safeName);
+
+  try {
+    const payload = await request.json();
+    await fs.writeFile(filePath, JSON.stringify(payload, null, 2));
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to save structured receipt." },
+      { status: 400 }
+    );
   }
 }

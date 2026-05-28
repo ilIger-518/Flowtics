@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
-import { resolveUploadsDir } from "@/lib/paths";
+import { resolveReceiptsDir } from "@/lib/paths";
 
 export const runtime = "nodejs";
 
-const uploadsDir = resolveUploadsDir();
+const receiptsDir = resolveReceiptsDir();
 
 function toSafeName(name: string) {
   return path.basename(name);
@@ -23,7 +23,7 @@ export async function GET(
     return NextResponse.json({ error: "Invalid file name." }, { status: 400 });
   }
 
-  const filePath = path.join(uploadsDir, safeName);
+  const filePath = path.join(receiptsDir, safeName);
 
   try {
     const stat = await fs.stat(filePath);
@@ -34,7 +34,7 @@ export async function GET(
     const data = await fs.readFile(filePath);
     return new NextResponse(data, {
       headers: {
-        "Content-Type": "application/octet-stream",
+        "Content-Type": "application/json",
         "Content-Disposition": `attachment; filename="${safeName}"`,
       },
     });

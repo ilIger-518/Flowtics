@@ -13,10 +13,63 @@ datasource db {
 model Receipt {
   id          Int      @id @default(autoincrement())
   merchant    String?
+  merchantKey String?
   total       Float?
   category    String?
+  categoryKey String?
+  currency    String?
   receiptDate DateTime?
   imagePath   String
+  ocrPath     String?
+  structuredPath String?
   rawText     String?
+  ocrConfidence Float?
+  needsReview Boolean  @default(false)
+  duplicateOfId Int?
+  duplicateOf Receipt? @relation("ReceiptDuplicates", fields: [duplicateOfId], references: [id])
+  duplicates  Receipt[] @relation("ReceiptDuplicates")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SavedView {
+  id        Int      @id @default(autoincrement())
+  name      String
+  scope     String
+  filters   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MerchantAlias {
+  id         Int      @id @default(autoincrement())
+  rawName    String   @unique
+  normalized String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model TradeRepublicImport {
+  id           Int      @id @default(autoincrement())
+  fileName     String
+  originalName String?
+  uploadedAt   DateTime @default(now())
+  rows         TradeRepublicRow[]
+}
+
+model TradeRepublicRow {
+  id          Int      @id @default(autoincrement())
+  importId    Int
+  import      TradeRepublicImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  date        DateTime
+  amount      Float
+  currency    String
+  type        String
+  description String?
+  category    String
+  isin        String?
+  instrument  String?
+  merchant    String?
+  kind        String
   createdAt   DateTime @default(now())
 }
