@@ -153,7 +153,14 @@ export default function TradeRepublicPage() {
         </div>
 
         <section className="rounded-lg border border-border bg-card p-4">
-          <h2 className="text-lg font-medium">Upload CSV exports</h2>
+          <h2 className="flex items-center gap-2 text-lg font-medium">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+                <path d="M10 3l4 4h-3v6H9V7H6l4-4zM4 15h12v2H4v-2z" fill="currentColor" />
+              </svg>
+            </span>
+            Upload CSV exports
+          </h2>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <input
               type="file"
@@ -188,7 +195,14 @@ export default function TradeRepublicPage() {
 
         <section className="rounded-lg border border-border bg-card p-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium">Header mapping</h2>
+            <h2 className="flex items-center gap-2 text-lg font-medium">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4">
+                  <path d="M4 6h12v2H4V6zm0 4h8v2H4v-2zm0 4h10v2H4v-2z" fill="currentColor" />
+                </svg>
+              </span>
+              Header mapping
+            </h2>
             <button
               type="button"
               onClick={loadMapping}
