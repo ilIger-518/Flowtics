@@ -25,10 +25,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${gabarito.variable} ${geistMono.variable} h-full`}>
-      <body className="min-h-full flex flex-col font-sans">
-        <div className="flex min-h-[100dvh]">
+      <body className="min-h-full font-sans antialiased">
+        <div className="app-shell min-h-dvh">
           <SideNav />
-          <div className="flex-grow overflow-auto">{children}</div>
+          <main className="app-content grow">{children}</main>
         </div>
       </body>
     </html>

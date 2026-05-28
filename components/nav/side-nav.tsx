@@ -36,21 +36,22 @@ function ToggleIcon({ open }: { open: boolean }) {
 function Navigation() {
   const pathname = usePathname();
   return (
-    <nav className="flex flex-grow flex-col gap-y-1 p-2">
+    <nav className="flex grow flex-col gap-y-1 p-3">
       {navigations.map((navigation) => (
         <Link
           key={navigation.name}
           href={navigation.href}
           className={cn(
-            "flex items-center rounded-md px-2 py-1.5 hover:bg-slate-200 dark:hover:bg-slate-800",
+            "flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition",
             pathname === navigation.href
-              ? "bg-slate-200 dark:bg-slate-800"
-              : "bg-transparent"
+              ? "bg-white/90 text-slate-900 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900/80 dark:text-slate-100 dark:ring-slate-800"
+              : "text-slate-600 hover:bg-white/70 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-900/60 dark:hover:text-slate-100"
           )}
         >
-          <span className="text-sm text-slate-700 dark:text-slate-300">
-            {navigation.name}
-          </span>
+          <span>{navigation.name}</span>
+          {pathname === navigation.href ? (
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
+          ) : null}
         </Link>
       ))}
     </nav>
@@ -59,11 +60,11 @@ function Navigation() {
 
 function BrandBadge() {
   return (
-    <div className="relative my-2 flex flex-col items-center justify-center gap-y-2 px-4 py-4">
+    <div className="relative my-3 flex flex-col items-center justify-center gap-y-2 px-4 py-4">
       <div className="dot-matrix absolute left-0 top-0 -z-10 h-full w-full" />
-      <span className="text-xs text-muted-foreground">Powered by</span>
+      <span className="text-xs text-muted-foreground">Workspace</span>
       <div className="flex items-center space-x-2">
-        <span className="text-md text-accent-foreground">{siteConfig.title}</span>
+        <span className="text-md font-semibold text-accent-foreground">{siteConfig.title}</span>
       </div>
     </div>
   );
@@ -76,7 +77,7 @@ export default function SideNav() {
     <>
       <button
         className={cn(
-          "fixed left-0 top-12 z-50 rounded-r-md bg-slate-200 px-2 py-1.5 text-primary-foreground shadow-md hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 tablet:hidden",
+          "fixed left-0 top-12 z-50 rounded-r-lg bg-white/90 px-2.5 py-2 text-slate-700 shadow-lg ring-1 ring-slate-200/70 backdrop-blur hover:bg-white tablet:hidden dark:bg-slate-900/80 dark:text-slate-200 dark:ring-slate-800 dark:hover:bg-slate-900",
           "transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-44" : "translate-x-0"
         )}
@@ -87,7 +88,7 @@ export default function SideNav() {
       </button>
       <aside
         className={cn(
-          "fixed bottom-0 left-0 top-0 z-40 flex h-[100dvh] w-44 shrink-0 flex-col border-r border-border bg-slate-100 dark:bg-slate-900 tablet:sticky tablet:translate-x-0",
+          "fixed bottom-0 left-0 top-0 z-40 flex h-dvh w-52 shrink-0 flex-col border-r border-border bg-white/80 shadow-xl backdrop-blur dark:bg-slate-950/80 tablet:sticky tablet:translate-x-0",
           "transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}

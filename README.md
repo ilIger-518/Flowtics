@@ -194,6 +194,7 @@ npm run dev
 - OCR requests are sent to Google Cloud Vision `images:annotate` using document text detection.
 - OCR text is parsed by Ollama via `/api/chat` with a JSON schema to produce structured receipts.
 - Theme tokens follow the VisActor template and are mapped into Tailwind via `@theme inline`.
+- The app shell uses a layered gradient background, subtle motion, and glass-style surfaces for navigation.
 - File paths resolve from the repo root by locating the nearest `package.json`, so routes work even if the dev server is started from a subdirectory.
 
 ## Dependency Usage and Rationale
