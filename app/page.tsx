@@ -61,6 +61,15 @@ export default async function Page() {
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <Link
+            href="/reports"
+            className="rounded-lg border border-border bg-card p-4 transition hover:border-primary"
+          >
+            <h2 className="text-lg font-medium">Reports</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Track spend by day, week, month, and category.
+            </p>
+          </Link>
+          <Link
             href="/uploads"
             className="rounded-lg border border-border bg-card p-4 transition hover:border-primary"
           >

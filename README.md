@@ -26,6 +26,7 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 	- `layout.tsx`: Root layout, global fonts, HTML/body structure.
 	- `page.tsx`: Dashboard home page (server component) with pipeline metrics.
 	- `drop/page.tsx`: Drag-and-drop upload page.
+	- `reports/page.tsx`: Reports dashboard with analytics and charts.
 	- `api/upload/route.ts`: Accepts `multipart/form-data` uploads and writes files to `uploads/`.
 	- `uploads/page.tsx`: Lists uploaded files with download links.
 	- `uploads/receipts/page.tsx`: Lists OCR and structured receipt JSON files.
@@ -38,7 +39,9 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 	- `generated/prisma/`: Prisma Client output.
 - `components/nav/side-nav.tsx`: Collapsible SideNav UI.
 - `components/receipts/receipt-editor.tsx`: Receipt repair form UI.
+- `components/reports/reports-dashboard.tsx`: Client-side charts and report widgets.
 - `config/site.ts`: Navigation config for the SideNav.
+- `lib/reports.ts`: Report aggregation, date parsing, and category heuristics.
 - `lib/utils.ts`: Utility helpers (class name merging).
 - `prisma/`
 	- `schema.prisma`: Database schema and generator config.
@@ -58,7 +61,8 @@ Flowtics is a Next.js (App Router) project with a minimal drag-and-drop image up
 7) The uploads page lists current files and links to `/uploads/[file]` for download.
 8) The receipts page lists OCR and structured JSON outputs for each upload, with links to a repair view.
 9) The receipt repair view shows the original image and lets users edit structured fields.
-10) A left SideNav provides navigation between "Dashboard", "Drop files", "Uploads", and "Receipts".
+10) The reports page aggregates structured receipts into day/week/month charts, category totals, and merchant insights.
+11) A left SideNav provides navigation between "Dashboard", "Reports", "Drop files", "Uploads", and "Receipts".
 
 ## API Endpoints
 ### `POST /api/upload`
@@ -131,6 +135,7 @@ npm run dev
 ## Important Implementation Details
 - The dashboard home page is a server component that reads file counts from disk.
 - The drop page is a client component because it uses browser APIs (drag-and-drop, object URLs).
+- The reports page is a server component that reads structured JSON and feeds a client chart dashboard.
 - Previews are created with `URL.createObjectURL` and revoked on cleanup to avoid memory leaks.
 - Upload requests POST to `/api/upload`, which writes files to `uploads/` using `yyyy-mm-dd:hh-mm-ss-ms_UUID.<ext>` naming.
 - The upload route runs on the Node.js runtime to enable filesystem access.
@@ -177,6 +182,9 @@ Migrations live under `prisma/migrations/`.
 - Structured parsing will fail if Ollama is not running or the model is not pulled locally.
 - VS Code’s CSS linting may flag Tailwind at-rules (`@theme`, `@apply`) unless `.vscode/settings.json` disables unknown-at-rule warnings.
 - TypeScript needs `**/*.css` included in `tsconfig.json` to avoid `./globals.css` side-effect import errors.
+- Report aggregation skips structured receipts that lack a parsable date or total.
+- Category breakdowns rely on keyword heuristics and may misclassify merchants without manual tags.
+- Merchant insights group by raw merchant strings, so inconsistent naming can split totals.
 
 ## Troubleshooting Notes
 - If VS Code still reports TS2882 for `./globals.css`, ensure [global.d.ts](global.d.ts) declares `*.css` modules, `allowArbitraryExtensions` is enabled in `tsconfig.json`, and restart the TypeScript server.
