@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Area,
   AreaChart,
@@ -63,6 +65,54 @@ function formatShortDate(value: string) {
   const date = new Date(`${value}T00:00:00Z`);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+}
+
+function formatDateKey(value: string) {
+  return value;
+}
+
+function startOfWeek(date: Date) {
+  const base = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const day = base.getUTCDay();
+  const diff = (day + 6) % 7;
+  base.setUTCDate(base.getUTCDate() - diff);
+  return base;
+}
+
+function formatMonthKey(date: Date) {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+function buildSeries(
+  rows: TradeRepublicReportRow[],
+  range: Array<{ key: string; label: string }>,
+  keyFn: (row: TradeRepublicReportRow) => string
+) {
+  const totals = new Map<string, number>();
+  rows.forEach((row) => {
+    if (row.amount >= 0) return;
+    const key = keyFn(row);
+    totals.set(key, (totals.get(key) ?? 0) + Math.abs(row.amount));
+  });
+
+  return range.map(({ key, label }) => ({
+    label,
+    total: totals.get(key) ?? 0,
+  }));
+}
+
+function buildCategoryBreakdown(rows: TradeRepublicReportRow[]) {
+  const totals = new Map<string, number>();
+  rows.forEach((row) => {
+    if (row.amount >= 0) return;
+    totals.set(row.category, (totals.get(row.category) ?? 0) + Math.abs(row.amount));
+  });
+
+  return [...totals.entries()]
+    .map(([category, total]) => ({ category, total }))
+    .sort((a, b) => b.total - a.total);
 }
 
 function Card({ title, value, helper }: { title: string; value: string; helper?: string }) {
@@ -168,15 +218,86 @@ function CategoryChart({ data, currency }: { data: TradeRepublicCategoryPoint[];
 }
 
 export default function TradeRepublicDashboard({ data }: { data: TradeRepublicReportData }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [filters, setFilters] = useState<string[]>([]);
+  const initialized = useRef(false);
 
   const categories = ["Buy", "Sell", "Dividend", "Fees", "Card"];
   const activeFilters = filters.length > 0 ? filters : categories;
+
+  useEffect(() => {
+    const preset = searchParams.get("tr");
+    if (!preset) {
+      setFilters([]);
+      return;
+    }
+
+    if (preset === "card") {
+      setFilters(["Card"]);
+      return;
+    }
+
+    if (preset === "trading") {
+      setFilters(["Buy", "Sell", "Dividend", "Fees"]);
+      return;
+    }
+
+    if (preset.startsWith("custom:")) {
+      const raw = preset.replace("custom:", "");
+      const list = raw
+        .split(",")
+        .map((value) => value.trim())
+        .filter((value) => categories.includes(value));
+      setFilters(list);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!initialized.current) {
+      initialized.current = true;
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (filters.length === 0) {
+      params.delete("tr");
+    } else if (filters.length === 1 && filters[0] === "Card") {
+      params.set("tr", "card");
+    } else if (
+      filters.length === 4 &&
+      ["Buy", "Sell", "Dividend", "Fees"].every((value) => filters.includes(value))
+    ) {
+      params.set("tr", "trading");
+    } else {
+      const sorted = [...filters].sort();
+      params.set("tr", `custom:${sorted.join(",")}`);
+    }
+
+    const query = params.toString();
+    const nextUrl = query ? `?${query}` : window.location.pathname;
+    router.replace(nextUrl);
+  }, [filters, router, searchParams]);
 
   const filteredRows = useMemo(() => {
     if (data.rows.length === 0) return [];
     return data.rows.filter((row) => activeFilters.includes(row.category));
   }, [data.rows, activeFilters]);
+
+  const cardRows = useMemo(() => data.rows.filter((row) => row.category === "Card"), [data.rows]);
+  const tradingRows = useMemo(
+    () => data.rows.filter((row) => ["Buy", "Sell", "Dividend", "Fees"].includes(row.category)),
+    [data.rows]
+  );
+
+  const cardOutflow = useMemo(
+    () => cardRows.filter((row) => row.amount < 0).reduce((acc, row) => acc + Math.abs(row.amount), 0),
+    [cardRows]
+  );
+  const tradingOutflow = useMemo(
+    () => tradingRows.filter((row) => row.amount < 0).reduce((acc, row) => acc + Math.abs(row.amount), 0),
+    [tradingRows]
+  );
 
   const inflow = filteredRows.filter((row) => row.amount > 0).reduce((acc, row) => acc + row.amount, 0);
   const outflow = filteredRows
@@ -260,6 +381,14 @@ export default function TradeRepublicDashboard({ data }: { data: TradeRepublicRe
           >
             Trading only
           </button>
+          <div className="ml-auto flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span className="rounded-full border border-border px-3 py-1">
+              Card outflow: {formatCurrency(cardOutflow, data.currency)}
+            </span>
+            <span className="rounded-full border border-border px-3 py-1">
+              Trading outflow: {formatCurrency(tradingOutflow, data.currency)}
+            </span>
+          </div>
           {categories.map((category) => {
             const active = activeFilters.includes(category);
             return (
