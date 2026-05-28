@@ -31,7 +31,20 @@ export type TradeRepublicReportRow = {
   isin: string | null;
   instrument: string | null;
   quantity: number | null;
+  cardTagKey: string;
+  cardMerchant: string | null;
+  cardCategory: string | null;
   fileName: string;
+};
+
+export type TradeRepublicPosition = {
+  isin: string | null;
+  instrument: string | null;
+  buy: number;
+  sell: number;
+  net: number;
+  trades: number;
+  lastTrade: string;
 };
 
 export type TradeRepublicReportData = {
@@ -73,11 +86,25 @@ type TradeRepublicRow = {
   isin: string | null;
   instrument: string | null;
   quantity: number | null;
+  cardTagKey: string;
+  cardMerchant: string | null;
+  cardCategory: string | null;
   fileName: string;
 };
 
 const tradeRepublicDir = resolveTradeRepublicDir();
 const mappingPath = path.join(tradeRepublicDir, "mapping.json");
+const cardTagsPath = path.join(tradeRepublicDir, "card-tags.json");
+
+type CardTags = Record<
+  string,
+  {
+    key: string;
+    merchant: string;
+    category: string;
+    updatedAt: string;
+  }
+>;
 
 function normalizeHeader(value: string) {
   return value.trim().toLowerCase();
@@ -253,6 +280,25 @@ async function readHeaderMapping(): Promise<HeaderMapping> {
   }
 }
 
+async function readCardTags(): Promise<CardTags> {
+  try {
+    const raw = await fs.readFile(cardTagsPath, "utf-8");
+    return JSON.parse(raw) as CardTags;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      return {};
+    }
+    return {};
+  }
+}
+
+function buildCardTagKey(fileName: string, date: Date, amount: number, description: string) {
+  const dateKey = formatDateKey(date);
+  const amountKey = amount.toFixed(2);
+  const descriptionKey = description.trim().slice(0, 64);
+  return `${fileName}::${dateKey}::${amountKey}::${descriptionKey}`;
+}
+
 async function listTradeRepublicFiles() {
   try {
     const entries = await fs.readdir(tradeRepublicDir);
@@ -265,7 +311,7 @@ async function listTradeRepublicFiles() {
   }
 }
 
-async function parseCsvFile(fileName: string) {
+async function parseCsvFile(fileName: string, cardTags: CardTags) {
   const filePath = path.join(tradeRepublicDir, fileName);
   const raw = await fs.readFile(filePath, "utf-8");
   const lines = raw.split(/\r?\n/).filter((line) => line.trim().length > 0);
@@ -305,6 +351,9 @@ async function parseCsvFile(fileName: string) {
     const instrument = instrumentIndex !== null ? (columns[instrumentIndex] || "").trim() : "";
     const quantity = quantityIndex !== null ? parseAmount(columns[quantityIndex]) : null;
 
+    const cardTagKey = buildCardTagKey(fileName, date, amount, description);
+    const tag = cardTags[cardTagKey];
+
     rows.push({
       date,
       amount,
@@ -315,6 +364,9 @@ async function parseCsvFile(fileName: string) {
       isin: isin || null,
       instrument: instrument || null,
       quantity: quantity ?? null,
+      cardTagKey,
+      cardMerchant: tag?.merchant ?? null,
+      cardCategory: tag?.category ?? null,
       fileName,
     });
   }
@@ -436,10 +488,11 @@ function buildTradingMonthlyNet(
 export async function getTradeRepublicReportData(): Promise<TradeRepublicReportData> {
   const files = await listTradeRepublicFiles();
   const allRows: TradeRepublicRow[] = [];
+  const cardTags = await readCardTags();
   let skipped = 0;
 
   for (const fileName of files) {
-    const rows = await parseCsvFile(fileName);
+    const rows = await parseCsvFile(fileName, cardTags);
     if (rows.length === 0) {
       skipped += 1;
       continue;
@@ -486,8 +539,6 @@ export async function getTradeRepublicReportData(): Promise<TradeRepublicReportD
   const monthly = buildSeries(filtered, monthlyRange, (row) => formatMonthKey(row.date));
   const tradingMonthlyNet = buildTradingMonthlyNet(filtered, monthlyRange);
   const tradingPositions = buildTradingPositions(filtered);
-  const tradingMonthlyNet = buildTradingMonthlyNet(filtered, monthlyRange);
-  const tradingPositions = buildTradingPositions(filtered);
 
   const rangeStart = filtered.length
     ? formatDateKey(new Date(Math.min(...filtered.map((item) => item.date.getTime()))))
@@ -521,15 +572,8 @@ export async function getTradeRepublicReportData(): Promise<TradeRepublicReportD
       skipped,
     },
     range: {
-        isin: row.isin,
-        instrument: row.instrument,
-        quantity: row.quantity,
       start: rangeStart,
       end: rangeEnd,
-      portfolio: {
-        positions: tradingPositions,
-        monthlyNet: tradingMonthlyNet,
-      },
     },
     series: {
       daily,
@@ -548,6 +592,9 @@ export async function getTradeRepublicReportData(): Promise<TradeRepublicReportD
       isin: row.isin,
       instrument: row.instrument,
       quantity: row.quantity,
+      cardTagKey: row.cardTagKey,
+      cardMerchant: row.cardMerchant,
+      cardCategory: row.cardCategory,
       fileName: row.fileName,
     })),
     portfolio: {

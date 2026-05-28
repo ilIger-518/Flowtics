@@ -269,10 +269,13 @@ export default function TradeRepublicDashboard({ data }: { data: TradeRepublicRe
   const router = useRouter();
   const searchParams = useSearchParams();
   const [filters, setFilters] = useState<string[]>([]);
+  const [cardTags, setCardTags] = useState<Record<string, { merchant: string; category: string }>>({});
+  const [tagStatus, setTagStatus] = useState<string | null>(null);
   const initialized = useRef(false);
 
   const categories = ["Buy", "Sell", "Dividend", "Fees", "Card"];
   const activeFilters = filters.length > 0 ? filters : categories;
+  const cardCategories = ["Food", "Transport", "Utilities", "Shopping", "Entertainment", "Travel", "Health", "Other"];
 
   useEffect(() => {
     const preset = searchParams.get("tr");
@@ -300,6 +303,19 @@ export default function TradeRepublicDashboard({ data }: { data: TradeRepublicRe
       setFilters(list);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const nextTags: Record<string, { merchant: string; category: string }> = {};
+    data.rows
+      .filter((row) => row.category === "Card")
+      .forEach((row) => {
+        nextTags[row.cardTagKey] = {
+          merchant: row.cardMerchant ?? "",
+          category: row.cardCategory ?? "",
+        };
+      });
+    setCardTags(nextTags);
+  }, [data.rows]);
 
   useEffect(() => {
     if (!initialized.current) {
@@ -333,6 +349,8 @@ export default function TradeRepublicDashboard({ data }: { data: TradeRepublicRe
   }, [data.rows, activeFilters]);
 
   const cardRows = useMemo(() => data.rows.filter((row) => row.category === "Card"), [data.rows]);
+
+  const cardRows = useMemo(() => data.rows.filter((row) => row.category === "Card"), [data.rows]);
   const tradingRows = useMemo(
     () => data.rows.filter((row) => ["Buy", "Sell", "Dividend", "Fees"].includes(row.category)),
     [data.rows]
@@ -346,6 +364,29 @@ export default function TradeRepublicDashboard({ data }: { data: TradeRepublicRe
     () => tradingRows.filter((row) => row.amount < 0).reduce((acc, row) => acc + Math.abs(row.amount), 0),
     [tradingRows]
   );
+
+  const handleSaveTag = async (key: string) => {
+    const tag = cardTags[key];
+    if (!tag?.merchant || !tag?.category) {
+      setTagStatus("Merchant and category are required.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/trade-republic/card-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, merchant: tag.merchant, category: tag.category }),
+      });
+      if (!response.ok) {
+        setTagStatus("Failed to save card tag.");
+        return;
+      }
+      setTagStatus("Card tag saved.");
+    } catch {
+      setTagStatus("Failed to save card tag.");
+    }
+  };
 
   const inflow = filteredRows.filter((row) => row.amount > 0).reduce((acc, row) => acc + row.amount, 0);
   const outflow = filteredRows
@@ -493,6 +534,78 @@ export default function TradeRepublicDashboard({ data }: { data: TradeRepublicRe
           <PortfolioChart data={data.portfolio.monthlyNet} currency={data.currency} />
           <PortfolioTable data={data.portfolio.positions} currency={data.currency} />
         </div>
+      </Section>
+
+      <Section title="Card transaction tagging">
+        {cardRows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No card transactions found.</p>
+        ) : (
+          <div className="space-y-3">
+            {cardRows.slice(0, 20).map((row) => {
+              const tag = cardTags[row.cardTagKey] ?? { merchant: "", category: "" };
+              return (
+                <div
+                  key={row.cardTagKey}
+                  className="grid gap-3 rounded-md border border-border p-3 text-sm md:grid-cols-[1.5fr_1fr_1fr_0.7fr]"
+                >
+                  <div>
+                    <p className="font-medium">{formatCurrency(Math.abs(row.amount), row.currency)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatShortDate(row.date)} · {row.description || row.type}
+                    </p>
+                  </div>
+                  <input
+                    className="w-full rounded border border-border bg-background px-2 py-1 text-sm"
+                    placeholder="Merchant"
+                    value={tag.merchant}
+                    onChange={(event) =>
+                      setCardTags((prev) => ({
+                        ...prev,
+                        [row.cardTagKey]: {
+                          merchant: event.target.value,
+                          category: tag.category,
+                        },
+                      }))
+                    }
+                  />
+                  <select
+                    className="w-full rounded border border-border bg-background px-2 py-1 text-sm"
+                    value={tag.category}
+                    onChange={(event) =>
+                      setCardTags((prev) => ({
+                        ...prev,
+                        [row.cardTagKey]: {
+                          merchant: tag.merchant,
+                          category: event.target.value,
+                        },
+                      }))
+                    }
+                  >
+                    <option value="">Select category</option>
+                    {cardCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveTag(row.cardTagKey)}
+                    className="rounded bg-primary px-3 py-1 text-sm text-white"
+                  >
+                    Save
+                  </button>
+                </div>
+              );
+            })}
+            {tagStatus ? <p className="text-xs text-muted-foreground">{tagStatus}</p> : null}
+            {cardRows.length > 20 ? (
+              <p className="text-xs text-muted-foreground">
+                Showing first 20 card transactions. Use filters to narrow the list.
+              </p>
+            ) : null}
+          </div>
+        )}
       </Section>
 
       <Section title="Largest outflows">
