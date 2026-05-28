@@ -246,6 +246,20 @@ export default function TradeRepublicDashboard({ data }: { data: TradeRepublicRe
 
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setFilters(["Card"])}
+            className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition hover:border-primary"
+          >
+            Card only
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilters(["Buy", "Sell", "Dividend", "Fees"])}
+            className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition hover:border-primary"
+          >
+            Trading only
+          </button>
           {categories.map((category) => {
             const active = activeFilters.includes(category);
             return (
