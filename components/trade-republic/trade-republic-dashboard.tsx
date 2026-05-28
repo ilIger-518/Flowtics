@@ -349,8 +349,6 @@ export default function TradeRepublicDashboard({ data }: { data: TradeRepublicRe
   }, [data.rows, activeFilters]);
 
   const cardRows = useMemo(() => data.rows.filter((row) => row.category === "Card"), [data.rows]);
-
-  const cardRows = useMemo(() => data.rows.filter((row) => row.category === "Card"), [data.rows]);
   const tradingRows = useMemo(
     () => data.rows.filter((row) => ["Buy", "Sell", "Dividend", "Fees"].includes(row.category)),
     [data.rows]
